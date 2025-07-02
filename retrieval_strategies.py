@@ -30,7 +30,6 @@ class VectorRetrievalStrategy(RetrievalStrategy):
         try:
             # 動態創建向量資料庫
             logger.info("開始動態創建向量資料庫...")
-            self.vector_store.clear()  # 清空之前的資料
             self.vector_store.add_medical_documents(database_content)
             
             # 使用向量檢索

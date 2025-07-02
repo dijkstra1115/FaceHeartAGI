@@ -148,7 +148,7 @@ async def example_medical_analysis():
         payload1 = {
             "knowledge_base": CUSTOM_KNOWLEDGE_BASE,
             "fhir_data": SAMPLE_FHIR_DATA,
-            "user_question": "高血壓的飲食建議",
+            "user_question": "高血壓的人要吃甚麼?",
             "retrieval_type": "vector"
         }
         
@@ -163,7 +163,7 @@ async def example_medical_analysis():
         payload2 = {
             "knowledge_base": CUSTOM_KNOWLEDGE_BASE,
             "fhir_data": SAMPLE_FHIR_DATA,
-            "user_question": "高血壓的飲食建議",
+            "user_question": "高血壓的人要吃甚麼?",
             "retrieval_type": "llm"
         }
         
@@ -207,19 +207,19 @@ async def example_rag_retrieval():
             "RAG 檢索（向量檢索）"
         )
         
-        # # 2. LLM 檢索
-        # payload2 = {
-        #     "knowledge_base": CUSTOM_KNOWLEDGE_BASE,
-        #     "user_question": "高血壓的飲食建議",
-        #     "retrieval_type": "llm"
-        # }
+        # 2. LLM 檢索
+        payload2 = {
+            "knowledge_base": CUSTOM_KNOWLEDGE_BASE,
+            "user_question": "高血壓的人要吃甚麼?",
+            "retrieval_type": "llm"
+        }
         
-        # await non_stream_response(
-        #     session,
-        #     f"{BASE_URL}/rag-retrieve",
-        #     payload2,
-        #     "RAG 檢索（LLM 檢索）"
-        # )
+        await non_stream_response(
+            session,
+            f"{BASE_URL}/rag-retrieve",
+            payload2,
+            "RAG 檢索（LLM 檢索）"
+        )
         
         # # 3. 使用預設知識庫
         # payload3 = {
@@ -278,7 +278,7 @@ async def main():
     # 執行範例
     try:
         await example_rag_retrieval()
-        # await example_medical_analysis()
+        await example_medical_analysis()
         
         print("\n" + "=" * 60)
         print("✅ 所有範例執行完成！")

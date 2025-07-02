@@ -31,10 +31,6 @@ class VectorStore:
         self.metadata = []
         self.dimension = None
         
-        # 創建向量資料庫目錄
-        self.vector_db_dir = "vector_db"
-        os.makedirs(self.vector_db_dir, exist_ok=True)
-        
         logger.info(f"向量資料庫初始化完成，使用模型: {model_name}")
     
     def add_documents(self, documents: List[Dict[str, Any]]) -> None:
@@ -125,48 +121,6 @@ class VectorStore:
         except Exception as e:
             logger.error(f"搜尋過程中發生錯誤: {str(e)}")
             return []
-    
-    def save(self, filename: str = "vector_store") -> None:
-        """
-        保存向量資料庫到文件
-        
-        Args:
-            filename: 文件名（不包含擴展名）
-        """
-        try:
-            if self.index is None:
-                logger.warning("沒有索引可以保存")
-                return
-            
-            # 保存 FAISS 索引
-            index_path = os.path.join(self.vector_db_dir, f"{filename}.faiss")
-            faiss.write_index(self.index, index_path)
-            
-            # 保存文檔和元數據
-            data_path = os.path.join(self.vector_db_dir, f"{filename}.pkl")
-            data = {
-                'documents': self.documents,
-                'metadata': self.metadata,
-                'dimension': self.dimension,
-                'model_name': self.model_name
-            }
-            
-            with open(data_path, 'wb') as f:
-                pickle.dump(data, f)
-            
-            logger.info(f"向量資料庫已保存到 {self.vector_db_dir}")
-            
-        except Exception as e:
-            logger.error(f"保存向量資料庫時發生錯誤: {str(e)}")
-            raise
-    
-    def clear(self) -> None:
-        """清空向量資料庫"""
-        self.index = None
-        self.documents = []
-        self.metadata = []
-        self.dimension = None
-        logger.info("向量資料庫已清空")
 
 
 class MedicalVectorStore(VectorStore):
