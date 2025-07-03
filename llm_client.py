@@ -76,3 +76,43 @@ class LLMClient:
         except Exception as e:
             raise Exception(f"LLM 異步串流回應生成失敗: {str(e)}")
 
+    async def generate_response_async(self, messages: List[Dict[str, str]], max_tokens: int = 1000, temperature: float = 0.7) -> str:
+        """
+        生成 LLM 回應（異步模式）
+        
+        Args:
+            messages: 聊天消息列表
+            max_tokens: 最大輸出 token 數
+            temperature: 創意度 (0-1)
+            
+        Returns:
+            LLM 回應的完整文字
+        """
+        try:
+            payload = {
+                "model": self.model,
+                "messages": messages,
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+                "stream": False
+            }
+            
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    url=self.base_url,
+                    headers=self.headers,
+                    json=payload
+                ) as response:
+                    if response.status != 200:
+                        error_text = await response.text()
+                        raise Exception(f"API 請求失敗: {response.status} - {error_text}")
+                    
+                    response_data = await response.json()
+                    if 'choices' in response_data and len(response_data['choices']) > 0:
+                        return response_data['choices'][0]['message']['content']
+                    else:
+                        raise Exception("API 回應格式錯誤")
+                        
+        except Exception as e:
+            raise Exception(f"LLM 同步回應生成失敗: {str(e)}")
+
