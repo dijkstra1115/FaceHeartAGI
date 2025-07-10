@@ -1,52 +1,64 @@
 {
-    "condition": "高血壓",
-    "description": "血壓持續高於正常值（收縮壓≥140mmHg或舒張壓≥90mmHg）",
+    "condition": "Hypertension",
+    "description": "Persistently elevated blood pressure (systolic ≥140 mmHg or diastolic ≥90 mmHg)",
     "recommendations": {
         "general": [
-            "每日監測血壓，目標 < 140/90 mmHg",
-            "按時服藥，不可自行停藥",
-            "定期回診追蹤"
+            "Monitor blood pressure daily; target < 140/90 mmHg",
+            "Take medications as prescribed; do not stop on your own",
+            "Attend regular follow-up appointments"
         ],
         "diet": [
-            "限制鈉攝入量，每日 < 2.3g",
-            "增加蔬菜水果攝入，特別是富含鉀的食物",
-            "減少飽和脂肪和反式脂肪",
-            "控制總熱量攝入，維持健康體重",
-            "限制酒精攝入，男性每日 < 2 杯，女性 < 1 杯"
+            "Limit sodium intake to < 2.3g per day",
+            "Increase intake of vegetables and fruits, especially potassium-rich foods",
+            "Reduce saturated and trans fats",
+            "Control total caloric intake to maintain a healthy weight",
+            "Limit alcohol: men < 2 drinks/day, women < 1 drink/day"
         ],
         "exercise": [
-            "規律有氧運動，每週 150 分鐘中等強度運動",
-            "每週 2-3 次肌力訓練",
-            "運動前後監測血壓",
-            "避免劇烈運動，循序漸進增加強度"
+            "Regular aerobic exercise: 150 minutes of moderate intensity per week",
+            "Strength training 2–3 times per week",
+            "Monitor blood pressure before and after exercise",
+            "Avoid strenuous exercise; gradually increase intensity"
         ],
         "monitoring": [
-            "每日監測血壓，記錄變化趨勢",
-            "定期檢查腎功能和心臟功能",
-            "每 3-6 個月檢查血脂",
-            "定期眼科檢查"
+            "Monitor blood pressure daily and record trends",
+            "Regularly check kidney and heart function",
+            "Check blood lipids every 3–6 months",
+            "Have regular eye exams"
         ],
         "lifestyle": [
-            "戒菸，避免二手菸",
-            "控制體重，BMI < 25",
-            "減少壓力，學習放鬆技巧",
-            "保持充足睡眠，每晚 7-8 小時"
+            "Quit smoking and avoid secondhand smoke",
+            "Maintain healthy weight (BMI < 25)",
+            "Reduce stress and learn relaxation techniques",
+            "Get sufficient sleep: 7–8 hours per night"
         ]
     },
-    "risk_factors": ["年齡 > 65 歲", "肥胖", "家族史", "吸菸", "缺乏運動"],
-    "complications": ["心臟病", "中風", "腎臟病", "視網膜病變"],
+    "risk_factors": [
+        "Age > 65",
+        "Obesity",
+        "Family history",
+        "Smoking",
+        "Lack of physical activity"
+    ],
+    "complications": [
+        "Heart disease",
+        "Stroke",
+        "Kidney disease",
+        "Retinopathy"
+    ],
     "domestic": [
-        "台灣高血壓患者中，約 60% 不知道自己有高血壓",
-        "台灣男性高血壓盛行率（28.5%）高於女性（21.8%）",
-        "台灣高血壓患者中，約 40% 同時患有糖尿病",
-        "台灣高血壓患者中，約 25% 有心血管疾病"
+        "About 60% of people with hypertension in Taiwan are unaware of their condition",
+        "Hypertension prevalence is higher in Taiwanese men (28.5%) than women (21.8%)",
+        "Around 40% of hypertensive patients in Taiwan also have diabetes",
+        "About 25% of hypertensive patients in Taiwan have cardiovascular disease"
     ],
     "ethnic": [
-        "亞洲人高血壓盛行率約 20-30%",
-        "亞洲人鹽敏感性較高，對鈉攝入更敏感",
-        "非裔美國人高血壓盛行率約 40-45%",
-        "非裔美國人發病年齡較早，嚴重程度較高",
-        "白人高血壓盛行率約 25-30%",
-        "白人發病年齡較晚"
+        "Hypertension prevalence among Asians is about 20–30%",
+        "Asians have higher salt sensitivity and respond more to sodium intake",
+        "Prevalence among African Americans is about 40–45%",
+        "African Americans tend to develop hypertension earlier and more severely",
+        "Prevalence among Whites is about 25–30%",
+        "Whites tend to develop hypertension at a later age"
     ]
-}
+  }
+  

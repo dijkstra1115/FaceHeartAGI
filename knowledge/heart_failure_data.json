@@ -1,91 +1,92 @@
 {
-    "condition": "心臟衰竭",
-    "description": "心臟衰竭是指心臟無法打出足夠血液供應身體所需，分為心臟無法充滿足夠血液、或心臟幫浦沒有力量打出足夠血液供應身體所需，這兩種狀況有時同時存在。心臟衰竭並非心臟已停止工作，而是它的狀況嚴重到需醫療照顧。",
+    "condition": "Heart Failure",
+    "description": "Heart failure refers to the heart's inability to pump enough blood to meet the body's needs. It may result from the heart not filling with enough blood, or the heart not pumping with enough force—sometimes both conditions occur simultaneously. Heart failure does not mean the heart has stopped working, but that it requires medical attention due to its serious dysfunction.",
     "symptoms": [
-        "疲倦：反應遲鈍、注意力不集中、運動能力下降、沒胃口或噁心",
-        "水腫：雙腳及腹部水腫、體重增加、小便量減少",
-        "呼吸困難：平躺時氣喘，坐起來才能緩解",
-        "咳嗽與痰液：痰液可能帶血絲",
-        "心跳異常：心跳快速或不規則"
+        "Fatigue: slow reactions, poor concentration, reduced physical performance, loss of appetite or nausea",
+        "Edema: swelling in the legs and abdomen, weight gain, decreased urine output",
+        "Shortness of breath: difficulty breathing when lying flat, relieved by sitting up",
+        "Cough and sputum: sputum may be blood-tinged",
+        "Irregular heartbeat: rapid or irregular heartbeat"
     ],
     "diagnosis": [
-        "心臟超音波：檢查結構、功能及瓣膜問題",
-        "胸部X光：觀察心臟大小、肺水腫、肋膜積水",
-        "心電圖：檢測心律不整與心肌缺血",
-        "NT-proBNP：心臟衰竭指標，數值愈高愈嚴重",
-        "血液檢查：肝腎功能、電解質、甲狀腺功能、血糖、膽固醇",
-        "冠狀動脈攝影、運動心電圖、心導管檢查"
+        "Echocardiogram: checks structure, function, and valve issues",
+        "Chest X-ray: assesses heart size, pulmonary edema, pleural effusion",
+        "Electrocardiogram (ECG): detects arrhythmias and myocardial ischemia",
+        "NT-proBNP: heart failure marker, higher levels indicate more severe condition",
+        "Blood tests: liver and kidney function, electrolytes, thyroid function, blood sugar, cholesterol",
+        "Coronary angiography, exercise ECG, cardiac catheterization"
     ],
     "recommendations": {
         "general": [
-            "注意呼吸困難、痰液異常、心跳不規則、胸痛等症狀，及早就醫",
-            "每日固定時間量體重，體重快速上升或水腫需回診",
-            "避免便秘與情緒起伏，作息規律並保持心情愉快"
+            "Pay attention to symptoms like shortness of breath, abnormal sputum, irregular heartbeat, and chest pain—seek medical attention early",
+            "Weigh yourself daily at the same time; rapid weight gain or swelling warrants a follow-up",
+            "Avoid constipation and emotional fluctuations, maintain regular routines, and stay in a good mood"
         ],
         "diet": [
-            "控制鹽分攝取：建議每日3-5克以下",
-            "避免高鹽加工食品",
-            "水分攝取控制，例如每日1200mL分時段攝取",
-            "預防口渴：避免高鈉飲食、使用口腔保濕法"
+            "Control salt intake: recommended daily intake is 3–5 grams",
+            "Avoid high-salt processed foods",
+            "Control fluid intake, such as distributing 1200 mL throughout the day",
+            "Prevent thirst: avoid high-sodium foods and use oral moisturizing methods"
         ],
         "exercise": [
-            "依醫師建議進行活動，病情穩定可適度下床",
-            "避免過度活動造成心臟負荷"
+            "Engage in activities based on doctor's advice; mild activity is allowed if condition is stable",
+            "Avoid overexertion that increases cardiac burden"
         ],
         "monitoring": [
-            "規則記錄體重與症狀變化",
-            "按時回診與服藥",
-            "觀察排尿量、水腫變化"
+            "Regularly record weight and symptom changes",
+            "Attend follow-ups and take medication as prescribed",
+            "Monitor urine output and swelling"
         ],
         "lifestyle": [
-            "戒菸戒酒",
-            "避免自行調整藥物",
-            "保持口腔與身體清潔",
-            "攝取高纖食物避免便秘"
+            "Quit smoking and drinking",
+            "Do not adjust medications on your own",
+            "Maintain oral and personal hygiene",
+            "Eat high-fiber foods to avoid constipation"
         ]
     },
     "risk_factors": [
-        "冠狀動脈心臟病",
-        "心肌梗塞",
-        "心臟瓣膜疾病",
-        "心肌病變",
-        "心律不整",
-        "高血壓",
-        "糖尿病",
-        "高血脂",
-        "老年",
-        "家族病史",
-        "肥胖",
-        "缺乏運動",
-        "抽菸酗酒",
-        "腎臟疾病",
-        "甲狀腺疾病",
-        "肺部疾病"
+        "Coronary artery disease",
+        "Myocardial infarction",
+        "Heart valve disease",
+        "Cardiomyopathy",
+        "Arrhythmia",
+        "Hypertension",
+        "Diabetes",
+        "Hyperlipidemia",
+        "Old age",
+        "Family history",
+        "Obesity",
+        "Lack of exercise",
+        "Smoking and alcohol abuse",
+        "Kidney disease",
+        "Thyroid disorders",
+        "Lung diseases"
     ],
     "complications": [
-        "肺水腫",
-        "肋膜積水",
-        "呼吸衰竭",
-        "鬱血性肝功能異常",
-        "肝硬化",
-        "腎功能衰退",
-        "水腫",
-        "心律不整",
-        "心臟擴大",
-        "瓣膜閉鎖不全",
-        "腦部功能衰退",
-        "疲倦與虛弱",
-        "腹水",
-        "猝死"
+        "Pulmonary edema",
+        "Pleural effusion",
+        "Respiratory failure",
+        "Congestive liver dysfunction",
+        "Liver cirrhosis",
+        "Kidney failure",
+        "Edema",
+        "Arrhythmia",
+        "Cardiac enlargement",
+        "Valve regurgitation",
+        "Cognitive decline",
+        "Fatigue and weakness",
+        "Ascites",
+        "Sudden death"
     ],
     "domestic": [
-        "台灣心臟衰竭盛行率約為1-1.77%",
-        "隨人口老化，預估2050年盛行率可達3-4.45%",
-        "住院與死亡率偏高，需重視預防與治療"
+        "The prevalence of heart failure in Taiwan is about 1 ~ 1.77%",
+        "With an aging population, it is projected to reach 3 ~ 4.45% by 2050",
+        "Hospitalization and mortality rates are relatively high, so prevention and treatment are important"
     ],
     "ethnic": [
-        "黑人族群的心臟衰竭發病率與死亡率高於白人",
-        "晚期心臟衰竭中黑人接受治療比例較低",
-        "不同種族對治療反應可能不同，藥物療效存在差異"
+        "Heart failure incidence and mortality rates are higher in Black populations than in Whites",
+        "Blacks with advanced heart failure have lower treatment rates",
+        "Different ethnic groups may respond differently to treatment, and medication efficacy may vary"
     ]
-}
+  }
+  

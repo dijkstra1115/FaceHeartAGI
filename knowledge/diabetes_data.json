@@ -1,92 +1,93 @@
 {
-    "condition": "糖尿病",
-    "description": "糖尿病是一種長期慢性疾病，也是一種文明病，當體內胰島素供應不足或身體細胞對胰島素利用能力降低，會導致醣類、脂肪及蛋白質代謝異常，造成血糖濃度上升或不穩定的情形。",
+    "condition": "Diabetes",
+    "description": "Diabetes is a long-term chronic disease and a lifestyle-related illness. When insulin production is insufficient or the body's cells have reduced insulin sensitivity, it leads to abnormal metabolism of carbohydrates, fats, and proteins, causing elevated or unstable blood glucose levels.",
     "symptoms": [
-        "多吃（polyphagia）：即使吃很多，仍感到飢餓",
-        "多喝（polydipsia）：經常感到口渴",
-        "多尿（polyuria）：頻繁且大量的排尿",
-        "體重減輕（weight loss）：雖然食量增加，但體重反而下降",
-        "疲勞和虛弱（fatigue and weakness）",
-        "視力模糊（blurred vision）",
-        "傷口癒合慢（slow wound healing）",
-        "皮膚搔癢（skin itching）",
-        "足部麻木或刺痛（tingling or numbness in the feet）",
-        "反覆感染（frequent infections）",
-        "女性特定症狀：反覆黴菌感染、多囊性卵巢症候群等",
-        "其他症狀：黑色棘皮症、齒痕舌、臉上長斑等"
+        "Polyphagia: Feeling hungry despite eating a lot",
+        "Polydipsia: Constantly feeling thirsty",
+        "Polyuria: Frequent and excessive urination",
+        "Weight loss: Losing weight despite increased food intake",
+        "Fatigue and weakness",
+        "Blurred vision",
+        "Slow wound healing",
+        "Skin itching",
+        "Tingling or numbness in the feet",
+        "Frequent infections",
+        "Female-specific symptoms: recurrent yeast infections, polycystic ovary syndrome, etc.",
+        "Other symptoms: acanthosis nigricans, scalloped tongue, facial pigmentation"
     ],
     "diagnosis": [
-        "糖化血色素 ≧6.5%",
-        "隨機血糖值 ≧200 mg/dL 且併有相關症狀",
-        "空腹8小時血糖值 ≧126 mg/dL",
-        "口服葡萄糖耐受試驗（75公克）：第2小時後血糖 ≧200 mg/dL",
-        "妊娠性糖尿病診斷：空腹≧92、一小時≧180、兩小時≧153 mg/dL"
+        "HbA1c ≥ 6.5%",
+        "Random blood glucose ≥ 200 mg/dL with related symptoms",
+        "Fasting blood glucose after 8 hours ≥ 126 mg/dL",
+        "Oral glucose tolerance test (75g): blood glucose ≥ 200 mg/dL at 2 hours",
+        "Gestational diabetes diagnosis: fasting ≥ 92, 1 hour ≥ 180, 2 hours ≥ 153 mg/dL"
     ],
     "recommendations": {
         "general": [
-            "控制體重、戒菸限酒、適時舒壓、定期健康檢查、保持充足睡眠、注意足部護理"
+            "Control weight, quit smoking and limit alcohol, manage stress, get regular check-ups, ensure sufficient sleep, and care for your feet"
         ],
         "diet": [
-            "均衡飲食，攝取五穀根莖類、蔬果、豆魚蛋肉類、奶類和油脂類",
-            "減少精緻糖、高脂肪食物與含糖飲料",
-            "增加膳食纖維的攝取",
-            "採用蒸、煮、滷等少油少鹽烹調法",
-            "定時定量飲食，控制醣類份量"
+            "Maintain a balanced diet including grains, vegetables, fruits, beans, fish, eggs, meat, dairy, and fats",
+            "Reduce intake of refined sugars, high-fat foods, and sugary drinks",
+            "Increase dietary fiber intake",
+            "Use low-oil and low-salt cooking methods such as steaming, boiling, and stewing",
+            "Eat at regular times and control carbohydrate portions"
         ],
         "exercise": [
-            "每週至少150分鐘有氧運動，例如快走、游泳、騎自行車等",
-            "進行阻力訓練以增加肌肉量"
+            "Engage in at least 150 minutes of aerobic exercise weekly, such as brisk walking, swimming, or cycling",
+            "Do resistance training to build muscle mass"
         ],
         "monitoring": [
-            "定期檢查血糖、血壓、血脂",
-            "多喝水有助於身體機能及血糖穩定"
+            "Regularly check blood sugar, blood pressure, and blood lipids",
+            "Drink more water to support bodily functions and blood sugar stability"
         ],
         "lifestyle": [
-            "維持健康體重，避免肥胖",
-            "遠離菸酒",
-            "學習壓力管理技巧",
-            "保持足部清潔乾燥，避免受傷"
+            "Maintain a healthy weight and avoid obesity",
+            "Avoid tobacco and alcohol",
+            "Learn stress management techniques",
+            "Keep feet clean and dry, and avoid injuries"
         ]
     },
     "risk_factors": [
-        "糖尿病家族史",
-        "45歲以上年齡",
-        "BMI≧24 或男腰圍≧90cm / 女腰圍≧80cm",
-        "靜態生活習慣",
-        "代謝症候群或多囊性卵巢症候群",
-        "葡萄糖耐受不良或空腹血糖偏高（100~125 mg/dL）",
-        "高血壓或正在接受治療",
-        "高密度脂蛋白膽固醇＜35 mg/dL 或三酸甘油脂≧250 mg/dL",
-        "曾生育4公斤以上嬰兒或有妊娠糖尿病病史",
-        "酗酒",
-        "服用類固醇、利尿劑、避孕藥等藥物"
+        "Family history of diabetes",
+        "Age 45 and older",
+        "BMI ≥ 24 or waist circumference ≥ 90 cm for men / ≥ 80 cm for women",
+        "Sedentary lifestyle",
+        "Metabolic syndrome or polycystic ovary syndrome",
+        "Impaired glucose tolerance or elevated fasting glucose (100–125 mg/dL)",
+        "High blood pressure or being treated for it",
+        "HDL cholesterol < 35 mg/dL or triglycerides ≥ 250 mg/dL",
+        "History of giving birth to a baby weighing over 4 kg or having gestational diabetes",
+        "Alcohol abuse",
+        "Use of medications like steroids, diuretics, or contraceptives"
     ],
     "complications": [
-        "酮酸中毒（Ketoacidosis）",
-        "高血糖高滲透壓狀態（Hyperglycemic Hyperosmolar State）",
-        "低血糖症（Hypoglycemia）",
-        "心血管疾病",
-        "腎臟病變",
-        "眼部病變",
-        "神經病變",
-        "足部病變",
-        "感染（如肺結核、肝膿瘍、皮膚感染）"
+        "Ketoacidosis",
+        "Hyperglycemic Hyperosmolar State",
+        "Hypoglycemia",
+        "Cardiovascular disease",
+        "Kidney disease",
+        "Eye disease",
+        "Neuropathy",
+        "Foot complications",
+        "Infections (e.g., tuberculosis, liver abscess, skin infections)"
     ],
     "domestic": [
-        "台灣18歲以上糖尿病盛行率約為11.1%",
-        "20歲以上盛行率為12.8%",
-        "第二型糖尿病占比超過九成，且有年輕化趨勢",
-        "男性糖尿病盛行率略高於女性",
-        "成人中每4人有1人處於糖尿病前期，90%不知道自己是糖尿病前期",
-        "65歲以上男性盛行率可達28.5%",
-        "台灣糖尿病盛行率高於全球平均"
+        "The prevalence of diabetes in Taiwan among those aged 18 and over is about 11.1%",
+        "Prevalence among those aged 20 and over is 12.8%",
+        "Over 90% of cases are type 2 diabetes, with a trend toward younger onset",
+        "The prevalence among men is slightly higher than among women",
+        "1 in 4 adults is in the prediabetic stage, and 90% are unaware of it",
+        "Among men over 65, the prevalence can reach 28.5%",
+        "The prevalence of diabetes in Taiwan is higher than the global average"
     ],
     "ethnic": [
-        "黑人、拉丁裔、美洲原住民、亞裔美國人、太平洋島民第二型糖尿病風險較高",
-        "第一型糖尿病在白人中遺傳易感性較高，寒冷地區更常見",
-        "第二型糖尿病受遺傳與生活方式影響，不同族群患病率差異大",
-        "生活方式與環境、社經地位影響糖尿病風險",
-        "基因變異與糖尿病關聯成研究焦點",
-        "不同種族可能需不同篩檢標準"
+        "Black, Latino, Native American, Asian American, and Pacific Islander populations are at higher risk of type 2 diabetes",
+        "Type 1 diabetes has higher genetic susceptibility among Whites and is more common in colder regions",
+        "Type 2 diabetes is influenced by both genetics and lifestyle, with prevalence varying across ethnic groups",
+        "Lifestyle, environment, and socioeconomic status affect diabetes risk",
+        "Genetic variations and their links to diabetes are key research focuses",
+        "Different ethnicities may require different screening standards"
     ]
-}
+  }
+  

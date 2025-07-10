@@ -3,57 +3,57 @@ from typing import Dict, Any, List
 
 
 class PromptBuilder:
-    """提示詞建構器，負責生成各種類型的提示詞"""
+    """Prompt builder responsible for generating various types of prompts"""
     
-    # 系統提示詞
+    # System prompts
     SYSTEM_PROMPTS = {
-        "retrieval": "你是一個專業的醫療資料檢索助手。你的任務是從提供的資料庫內容中找出與用戶問題最相關的資訊。請只返回相關的內容，不要添加額外的解釋。",
-        "enhancement": "你是一個專業的醫療 AI 助手。請根據提供的 FHIR 資料和檢索到的相關內容，一步一步思考用戶問題，生成一個精簡、準確的回答。",
-        "base": "你是一個專業的醫療 AI 助手，專門協助分析 FHIR 格式的醫療資料。請根據提供的醫療資料回答問題，並提供準確的醫療資訊。",
-        "summary": "你是一個專業的對話摘要助手。請一步一步分析對話紀錄，生成簡潔的摘要，只包含用戶意圖和系統回應結論。"
+        "retrieval": "You are a professional medical data retrieval assistant. Your task is to find the most relevant information from the provided database content based on user questions. Please only return relevant content without adding additional explanations.",
+        "enhancement": "You are a professional medical AI assistant. Please analyze user questions step by step based on the provided FHIR data and retrieved relevant content to generate a concise and accurate response.",
+        "base": "You are a professional medical AI assistant specialized in analyzing FHIR format medical data. Please answer questions based on the provided medical data and provide accurate medical information.",
+        "summary": "You are a professional conversation summary assistant. Please analyze conversation records step by step to generate concise summaries containing only user intent and system response conclusions."
     }
     
     @classmethod
     def get_system_prompt(cls, prompt_type: str) -> str:
         """
-        獲取指定類型的系統提示詞
+        Get system prompt of specified type
         
         Args:
-            prompt_type: 提示詞類型 ("retrieval", "enhancement", "base", "summary")
+            prompt_type: Prompt type ("retrieval", "enhancement", "base", "summary")
             
         Returns:
-            系統提示詞
+            System prompt
         """
         return cls.SYSTEM_PROMPTS.get(prompt_type, "")
     
     @staticmethod
     def build_retrieval_prompt(user_question: str, database_content: Dict[str, Any]) -> str:
         """
-        建構檢索提示詞
+        Build retrieval prompt
         
         Args:
-            user_question: 用戶問題
-            database_content: 資料庫內容
+            user_question: User question
+            database_content: Database content
             
         Returns:
-            檢索提示詞
+            Retrieval prompt
         """
         formatted_content = json.dumps(database_content, ensure_ascii=False, indent=2)
         
         prompt = f"""
-用戶問題: {user_question}
+User Question: {user_question}
 
-請從以下資料庫內容中找出與用戶問題最相關的資訊：
+Please find the most relevant information from the following database content:
 
-資料庫內容:
+Database Content:
 {formatted_content}
 
-請只返回與用戶問題直接相關的內容，格式如下：
-- 相關資訊 1
-- 相關資訊 2
+Please only return content directly related to the user question in the following format:
+- Relevant Information 1
+- Relevant Information 2
 - ...
 
-如果沒有找到相關內容，請返回 "沒有檢索到相關內容"。
+If no relevant content is found, please return "No relevant content retrieved."
 """
         return prompt
     
@@ -61,121 +61,121 @@ class PromptBuilder:
     def build_enhancement_prompt(user_question: str, fhir_data: str, 
                                 retrieved_context: str, conversation_history: str = "") -> str:
         """
-        建構增強提示詞
+        Build enhancement prompt
         
         Args:
-            user_question: 用戶問題
-            fhir_data: FHIR 資料
-            retrieved_context: 檢索到的相關內容
-            conversation_history: 對話歷史（可選）
+            user_question: User question
+            fhir_data: FHIR data
+            retrieved_context: Retrieved relevant content
+            conversation_history: Conversation history (optional)
             
         Returns:
-            增強提示詞
+            Enhancement prompt
         """
-        # 如果有對話歷史，加入到提示詞中
+        # Add conversation history to prompt if available
         history_section = ""
         if conversation_history:
             history_section = f"""
-### 對話歷史 ###
+### Conversation History ###
 {conversation_history}
 """
 
         prompt = f"""
-### 回應規則 ###
-1. 避免回答不存在於檢索內容中的問題
-2. 若無法回答，請誠實告知用戶
-3. 如果當前問題與之前的對話相關，請適當引用或延續之前的建議
-4. 使用中文回答
+### Response Rules ###
+1. Avoid answering questions that are not present in the retrieved content
+2. If unable to answer, please honestly inform the user
+3. If the current question is related to previous conversations, please appropriately reference or continue previous suggestions
+4. Use English to respond
 
 {history_section}
 
-### 用戶問題 ###
+### User Question ###
 {user_question}
 
-### FHIR 資料 ###
+### FHIR Data ###
 {fhir_data}
 
-### 檢索內容 ###
+### Retrieved Content ###
 {retrieved_context}
 
-### 思考過程 ###
-1. 整合 FHIR 資料和檢索內容
-2. 判斷用戶問題是否在檢索內容中
-3. 考慮對話歷史，確保回應的連貫性
+### Thinking Process ###
+1. Integrate FHIR data and retrieved content
+2. Determine if the user question is within the retrieved content
+3. Consider conversation history to ensure response coherence
 
-### 目標 ###
-1. 請遵循 ### 思考過程 ### 的步驟，保持專業性和準確性，生成一個精簡、準確的回答
-2. 確保嚴格遵守 ### 回應規則 ###
+### Objective ###
+1. Please follow the steps in ### Thinking Process ###, maintain professionalism and accuracy, and generate a concise and accurate response
+2. Ensure strict adherence to ### Response Rules ###
 """
         return prompt
     
     @staticmethod
     def build_base_prompt(user_question: str, fhir_data: str, conversation_history: str = "") -> str:
         """
-        建構基礎提示詞（無檢索內容時使用）
+        Build base prompt (used when no retrieved content is available)
         
         Args:
-            user_question: 用戶問題
-            fhir_data: FHIR 資料
-            conversation_history: 對話歷史（可選）
+            user_question: User question
+            fhir_data: FHIR data
+            conversation_history: Conversation history (optional)
             
         Returns:
-            基礎提示詞
+            Base prompt
         """
-        # 如果有對話歷史，加入到提示詞中
+        # Add conversation history to prompt if available
         history_section = ""
         if conversation_history:
             history_section = f"""
-### 對話歷史 ###
+### Conversation History ###
 {conversation_history}
 """
 
-        return f"""{history_section}\n\n### 用戶問題 ###\n{user_question}\n\n### FHIR 資料 ###\n{fhir_data}
+        return f"""{history_section}\n\n### User Question ###\n{user_question}\n\n### FHIR Data ###\n{fhir_data}
 
-### 目標 ###
-請根據以上資訊回答問題，如果有對話歷史，請確保回應的連貫性。"""
+### Objective ###
+Please answer the question based on the above information. If there is conversation history, please ensure response coherence."""
 
     @staticmethod
     def build_summary_prompt(conversations: List[Dict[str, Any]]) -> str:
         """
-        構建摘要生成的提示詞
+        Build summary generation prompt
         
         Args:
-            conversations: 對話記錄列表
+            conversations: List of conversation records
             
         Returns:
-            摘要提示詞
+            Summary prompt
         """
         conversation_text = ""
         for i, conv in enumerate(conversations, 1):
             
             conversation_text += f"""
-[第 {conv['turn_number']} 輪對話]\n
-**用戶意圖**\n{conv['user_intent']}\n
-**FHIR 資料**\n{conv['fhir_data']}\n
-**系統回應**\n{conv['system_response'][:200]}{'...' if len(conv['system_response']) > 200 else ''}
+[Turn {conv['turn_number']}]\n
+**User Intent**\n{conv['user_intent']}\n
+**FHIR Data**\n{conv['fhir_data']}\n
+**System Response**\n{conv['system_response'][:200]}{'...' if len(conv['system_response']) > 200 else ''}
 
 """
         
         prompt = f"""
-### 對話記錄 ###
+### Conversation Records ###
 {conversation_text}
 
-### 輸出格式 ###
-**用戶意圖摘要:**
-- [簡潔描述用戶在這5輪對話中的主要意圖和需求]
+### Output Format ###
+**User Intent Summary:**
+- [Concise description of the user's main intent and needs in these 5 turns of conversation]
 
-**健康狀況變化:**
-- [基於FHIR資料分析用戶健康狀況的變化趨勢]
+**Health Status Changes:**
+- [Analysis of user's health status change trends based on FHIR data]
 
-**系統回應結論:**
-- [簡潔描述系統提供的主要建議和結論]
+**System Response Conclusions:**
+- [Concise description of the main recommendations and conclusions provided by the system]
 
-### 目標 ###
-1. 請根據 ### 對話記錄 ### 生成摘要。
-2. 確保摘要符合 ### 輸出格式 ### 規則。
-3. 請保持摘要簡潔明瞭，每部分不超過3個要點。
-4. 請使用中文回答。
+### Objective ###
+1. Please generate a summary based on ### Conversation Records ###.
+2. Ensure the summary complies with ### Output Format ### rules.
+3. Please keep the summary concise and clear, with no more than 3 points per section.
+4. Please respond in English.
 """
         return prompt
     

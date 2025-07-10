@@ -179,15 +179,15 @@ class ConversationManager:
         summaries = self.conversation_summaries.get(session_id, [])
         
         if not conversations:
-            return "這是我們的第一次對話。"
+            return "This is our first conversation."
         
         history_text = ""
                 
         # 如果有摘要且對話輪數 > 5，先添加摘要
         if summaries and len(conversations) > 5:
-            history_text += "**對話摘要**\n"
+            history_text += "**Conversation Summary**\n"
             for i, summary in enumerate(summaries, 1):
-                history_text += f"摘要 {i}: {summary}\n"
+                history_text += f"Summary {i}: {summary}\n"
             history_text += "\n"
         
         # 添加最近的對話記錄
@@ -199,18 +199,18 @@ class ConversationManager:
             recent_conversations = conversations[-recent_count:]
         
         for i, conv in enumerate(recent_conversations, 1):
-            history_text += f"[第 {conv['turn_number']} 輪對話]\n"
-            history_text += f"**用戶問題**\n{conv['user_intent']}\n"
+            history_text += f"[Turn {conv['turn_number']}]\n"
+            history_text += f"**User Question**\n{conv['user_intent']}\n"
             
             # 添加FHIR資料摘要
             if conv.get('fhir_data'):
-                history_text += f"**FHIR資料**\n{conv['fhir_data']}\n"
+                history_text += f"**FHIR Data**\n{conv['fhir_data']}\n"
             
             # 限制回應長度以避免提示詞過長
             response_preview = conv['system_response'][:200]
             if len(conv['system_response']) > 200:
                 response_preview += "..."
-            history_text += f"**系統回應**\n{response_preview}\n"
+            history_text += f"**System Response**\n{response_preview}\n"
                 
         return history_text
 

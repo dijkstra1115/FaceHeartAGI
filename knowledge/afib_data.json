@@ -1,78 +1,79 @@
 {
-    "condition": "心房顫動",
-    "description": "心房顫動是因心臟的心房無法正常跳動，導致心跳不規則的心律不整。心房跳動速度可達每分鐘350~600次，心房無法有效收縮，常稱為心房纖維顫動或房顫（Atrial Fibrillation）。",
+    "condition": "Atrial Fibrillation",
+    "description": "Atrial fibrillation is an arrhythmia where the atria of the heart cannot beat normally, leading to an irregular heartbeat. Atrial rates can reach 350–600 beats per minute, making the atria unable to contract effectively. It is commonly referred to as atrial fibrillation or AFib.",
     "symptoms": [
-        "全身疲勞",
-        "快速不規則的心跳",
-        "頭暈",
-        "呼吸急促和焦慮",
-        "無力、暈眩或混亂",
-        "運動時易喘、盜汗"
+        "General fatigue",
+        "Rapid and irregular heartbeat",
+        "Dizziness",
+        "Shortness of breath and anxiety",
+        "Weakness, faintness, or confusion",
+        "Shortness of breath during physical activity, night sweats"
     ],
     "diagnosis": [
-        "心電圖（ECG）：診斷心房顫動最常用工具",
-        "24小時心電圖（Holter）：偵測間歇性心房顫動",
-        "心臟超音波：觀察心臟結構與功能",
-        "驗血：排除甲狀腺亢進等其他可能疾病"
+        "Electrocardiogram (ECG): the most commonly used tool to diagnose atrial fibrillation",
+        "24-hour Holter monitor: detects intermittent atrial fibrillation",
+        "Echocardiogram: observes heart structure and function",
+        "Blood tests: rule out other conditions such as hyperthyroidism"
     ],
     "recommendations": {
         "general": [
-            "定期追蹤心律與血壓變化，注意心悸或疲憊感",
-            "治療相關慢性病，如高血壓與糖尿病"
+            "Regularly monitor heart rhythm and blood pressure; watch for palpitations or fatigue",
+            "Treat associated chronic conditions such as hypertension and diabetes"
         ],
         "diet": [
-            "避免高膽固醇、高鹽與高脂肪飲食",
-            "減少酒精與咖啡因攝取",
-            "多攝取蔬果與全穀類",
-            "維持健康體重，避免肥胖"
+            "Avoid diets high in cholesterol, salt, and fat",
+            "Reduce alcohol and caffeine intake",
+            "Increase intake of vegetables, fruits, and whole grains",
+            "Maintain a healthy weight and avoid obesity"
         ],
         "exercise": [
-            "適度規律運動，如快走、伸展運動",
-            "避免劇烈運動，應循序漸進",
-            "運動前諮詢醫師"
+            "Engage in moderate and regular exercise, such as brisk walking and stretching",
+            "Avoid strenuous activities; increase gradually",
+            "Consult a doctor before starting an exercise routine"
         ],
         "monitoring": [
-            "遵從醫囑定時服藥",
-            "定期回診與心電圖檢查",
-            "注意藥物副作用"
+            "Take medications as prescribed",
+            "Attend regular follow-up appointments and ECG checkups",
+            "Be aware of medication side effects"
         ],
         "lifestyle": [
-            "保持規律作息與充足睡眠",
-            "壓力管理與避免情緒激動",
-            "戒菸與避免過度飲酒",
-            "預防感冒，關注季節變化"
+            "Maintain a regular schedule and get enough sleep",
+            "Manage stress and avoid emotional extremes",
+            "Quit smoking and avoid excessive drinking",
+            "Prevent colds and be mindful of seasonal changes"
         ]
     },
     "risk_factors": [
-        "年齡增長（特別是65歲以上）",
-        "男性較多",
-        "肥胖",
-        "瓣膜性心臟病與其他心臟疾病",
-        "高血壓",
-        "糖尿病與代謝症候群",
-        "甲狀腺功能亢進",
-        "肺部疾病（如COPD、睡眠呼吸中止症）",
-        "酗酒、咖啡因過量、吸菸",
-        "壓力大或過度疲勞",
-        "家族遺傳"
+        "Advancing age (especially over 65)",
+        "More common in men",
+        "Obesity",
+        "Valvular heart disease and other heart conditions",
+        "Hypertension",
+        "Diabetes and metabolic syndrome",
+        "Hyperthyroidism",
+        "Lung diseases (e.g., COPD, sleep apnea)",
+        "Alcohol abuse, excessive caffeine, smoking",
+        "High stress or over-fatigue",
+        "Family history/genetic predisposition"
     ],
     "complications": [
-        "缺血性中風",
-        "心臟衰竭",
-        "血栓栓塞（腦部以外器官）",
-        "認知功能下降或失智",
-        "死亡風險增加"
+        "Ischemic stroke",
+        "Heart failure",
+        "Thromboembolism (in organs other than the brain)",
+        "Cognitive decline or dementia",
+        "Increased risk of death"
     ],
     "domestic": [
-        "心房顫動為最常見的心律不整",
-        "整體盛行率約為1-2%",
-        "65歲以上盛行率超過5%，80歲以上達10%",
-        "心房顫動與中風有關，約1/6腦中風與此病相關"
+        "Atrial fibrillation is the most common arrhythmia",
+        "Overall prevalence is about 1–2%",
+        "Prevalence exceeds 5% in those over 65, and 10% in those over 80",
+        "Atrial fibrillation is linked to stroke; about 1 in 6 strokes is related to AFib"
     ],
     "ethnic": [
-        "白人患病率高於黑人與亞洲人",
-        "不同種族的高血壓等風險因子比例不同",
-        "遺傳背景影響心房顫動的風險與表現",
-        "臨床表現與治療反應可能隨種族略有不同"
+        "Prevalence is higher among Whites compared to Blacks and Asians",
+        "Risk factors such as hypertension vary across ethnic groups",
+        "Genetic background influences the risk and presentation of atrial fibrillation",
+        "Clinical presentation and treatment response may differ slightly by ethnicity"
     ]
-}
+  }
+  
