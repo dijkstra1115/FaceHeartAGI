@@ -46,8 +46,8 @@ class RAGClient:
         
         return await self.retrieval_strategy.retrieve(user_question, database_content)
     
-    async def enhance_response_with_rag_stream(self, user_question: str, fhir_data: Dict[str, Any], 
-                                             database_content: Dict[str, Any]) -> AsyncGenerator[str, None]:
+    async def enhance_response_with_rag_stream(self, user_question: str, fhir_data: str, 
+                                             database_content: Dict[str, Any], conversation_history: str = "") -> AsyncGenerator[str, None]:
         """
         使用 RAG 增強回應（streaming 模式）
         
@@ -55,6 +55,7 @@ class RAGClient:
             user_question: 用戶問題
             fhir_data: FHIR 資料
             database_content: 資料庫內容
+            conversation_history: 對話歷史（可選）
             
         Yields:
             增強回應的文字片段
@@ -65,21 +66,21 @@ class RAGClient:
             
             if not retrieved_context or retrieved_context.strip() == "沒有檢索到相關內容":
                 logger.info("未找到相關的資料庫內容，將直接生成回應")
-                async for chunk in self._generate_base_response_stream(user_question, fhir_data):
+                async for chunk in self._generate_base_response_stream(user_question, fhir_data, conversation_history):
                     yield chunk
                 return
             
             # 生成增強回應
-            async for chunk in self._generate_enhanced_response_stream(user_question, fhir_data, retrieved_context):
+            async for chunk in self._generate_enhanced_response_stream(user_question, fhir_data, retrieved_context, conversation_history):
                 yield chunk
                 
         except Exception as e:
             logger.error(f"增強回應（streaming）過程中發生錯誤: {str(e)}")
             yield f"生成回應時發生錯誤: {str(e)}"
     
-    async def _generate_base_response_stream(self, user_question: str, fhir_data: Dict[str, Any]) -> AsyncGenerator[str, None]:
+    async def _generate_base_response_stream(self, user_question: str, fhir_data: str, conversation_history: str = "") -> AsyncGenerator[str, None]:
         """生成基礎回應（streaming 模式）"""
-        base_prompt = PromptBuilder.build_base_prompt(user_question, fhir_data)
+        base_prompt = PromptBuilder.build_base_prompt(user_question, fhir_data, conversation_history)
         
         messages = [
             {
@@ -100,11 +101,11 @@ class RAGClient:
         ):
             yield chunk
     
-    async def _generate_enhanced_response_stream(self, user_question: str, fhir_data: Dict[str, Any], 
-                                               retrieved_context: str) -> AsyncGenerator[str, None]:
+    async def _generate_enhanced_response_stream(self, user_question: str, fhir_data: str, 
+                                               retrieved_context: str, conversation_history: str = "") -> AsyncGenerator[str, None]:
         """生成增強回應（streaming 模式）"""
         enhancement_prompt = PromptBuilder.build_enhancement_prompt(
-            user_question, fhir_data, retrieved_context
+            user_question, fhir_data, retrieved_context, conversation_history
         )
         
         messages = [
@@ -117,6 +118,8 @@ class RAGClient:
                 "content": enhancement_prompt
             }
         ]
+
+        print(enhancement_prompt)
         
         logger.info("開始生成增強回應（streaming）...")
         async for chunk in self.llm_client.generate_response_stream(

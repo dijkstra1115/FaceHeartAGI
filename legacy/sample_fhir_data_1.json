@@ -1,0 +1,57 @@
+{
+  "Patient": {
+    "id": "patient-001",
+    "name": [{"given": ["李"], "family": "小明"}],
+    "gender": "male",
+    "birthDate": "1985-03-15"
+  },
+  "Observation": [
+    {
+      "code": {"coding": [{"display": "Blood Pressure Systolic"}]},
+      "valueQuantity": {"value": 170, "unit": "mmHg"},
+      "effectiveDateTime": "2023-08-28",
+      "status": "final"
+    },
+    {
+      "code": {"coding": [{"display": "Blood Pressure Diastolic"}]},
+      "valueQuantity": {"value": 110, "unit": "mmHg"},
+      "effectiveDateTime": "2023-08-28",
+      "status": "final"
+    },
+    {
+      "code": {"coding": [{"display": "Blood Glucose"}]},
+      "valueQuantity": {"value": 165, "unit": "mg/dL"},
+      "effectiveDateTime": "2023-08-28",
+      "status": "final"
+    },
+    {
+      "code": {"coding": [{"display": "Heart Rate"}]},
+      "valueQuantity": {"value": 95, "unit": "beats/min"},
+      "effectiveDateTime": "2023-08-28",
+      "status": "final"
+    },
+    {
+      "code": {"coding": [{"display": "Body Weight"}]},
+      "valueQuantity": {"value": 82.0, "unit": "kg"},
+      "effectiveDateTime": "2023-08-28",
+      "status": "final"
+    }
+  ],
+  "Condition": [
+    {
+      "code": {"coding": [{"display": "Hypertension"}]},
+      "clinicalStatus": {"coding": [{"code": "active"}]},
+      "severity": {"coding": [{"display": "Moderate"}]},
+      "onsetDateTime": "2023-01-01"
+    }
+  ],
+  "MedicationRequest": [
+    {
+      "medicationCodeableConcept": {"coding": [{"display": "Amlodipine"}]},
+      "status": "active",
+      "intent": "order",
+      "dosage": [{"text": "5mg daily"}],
+      "authoredOn": "2023-01-15"
+    }
+  ]
+} 

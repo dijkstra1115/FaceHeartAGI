@@ -10,6 +10,8 @@ from datetime import datetime
 import asyncio
 
 from rag_client import RAGClient
+from conversation_manager import ConversationManager
+from data_parser import observation_parser
 
 # 設定日誌
 logging.basicConfig(level=logging.INFO)
@@ -33,6 +35,7 @@ app.add_middleware(
 
 # 初始化組件
 rag_client = RAGClient()
+conversation_manager = ConversationManager()
 
 def load_default_knowledge_base():
     """載入預設知識庫"""
@@ -52,6 +55,7 @@ DEFAULT_KNOWLEDGE_BASE = load_default_knowledge_base()
 # Pydantic 模型
 class MedicalAnalysisRequest(BaseModel):
     """醫療分析請求模型"""
+    session_id: str  # 會話ID，用於記錄對話歷史
     knowledge_base: Optional[Dict[str, Any]] = None  # 知識庫內容（若無提供則使用預設知識庫模板）
     user_question: str  # 用戶問題
     fhir_data: Dict[str, Any]  # 個人 FHIR 資料
@@ -60,9 +64,14 @@ class MedicalAnalysisRequest(BaseModel):
 
 class RAGRetrieveRequest(BaseModel):
     """RAG 檢索請求模型"""
+    session_id: str  # 會話ID，用於記錄對話歷史
     knowledge_base: Optional[Dict[str, Any]] = None  # 知識庫內容（若無提供則使用預設知識庫模板）
     user_question: str  # 用戶問題
     retrieval_type: str = "vector"  # LLM 或向量檢索 ("llm" 或 "vector")
+
+class ConversationHistoryRequest(BaseModel):
+    """對話歷史請求模型"""
+    session_id: str  # 會話ID
 
 class APIResponse(BaseModel):
     success: bool
@@ -125,6 +134,7 @@ async def analyze_stream(request: MedicalAnalysisRequest):
     醫療資料分析端點，支援異步串流模式
     
     參數:
+    - session_id: 會話ID
     - knowledge_base: 知識庫內容（可選，若無提供則使用預設知識庫模板）
     - user_question: 用戶問題
     - fhir_data: 個人 FHIR 資料
@@ -133,8 +143,9 @@ async def analyze_stream(request: MedicalAnalysisRequest):
     返回 Server-Sent Events (SSE) 格式的串流回應
     """
     async def generate_streaming_analysis():
+        full_response = ""  # 用於收集完整回應
         try:
-            logger.info(f"收到醫療分析請求，問題: {request.user_question}")
+            logger.info(f"收到醫療分析請求，會話ID: {request.session_id}, 問題: {request.user_question}")
             logger.info(f"檢索類型: {request.retrieval_type}")
             
             # 使用預設知識庫模板（如果沒有提供）
@@ -146,16 +157,46 @@ async def analyze_stream(request: MedicalAnalysisRequest):
             else:
                 rag_client.switch_to_vector_search()
             
+            # 獲取對話歷史
+            conversation_history = conversation_manager.format_conversation_history_for_prompt(request.session_id)
+            
             # 直接使用 RAG 串流增強生成回應
             async for chunk in format_streaming_response(
                 rag_client.enhance_response_with_rag_stream(
                     request.user_question,
-                    request.fhir_data,
-                    knowledge_base
+                    observation_parser(request.fhir_data),
+                    knowledge_base,
+                    conversation_history
                 ),
                 "medical_analysis"
             ):
+                # 收集回應內容用於記錄對話
+                if '"content"' in chunk:
+                    try:
+                        # 解析 SSE 數據
+                        lines = chunk.strip().split('\n')
+                        for line in lines:
+                            if line.startswith('data: '):
+                                data_str = line[6:]
+                                data = json.loads(data_str)
+                                if 'content' in data:
+                                    full_response += data['content']
+                    except:
+                        pass
+                
                 yield chunk
+            
+            # 記錄完整的對話輪次
+            if full_response.strip():
+                
+                conversation_manager.add_conversation_turn(
+                    request.session_id,
+                    request.user_question,
+                    full_response,
+                    observation_parser(request.fhir_data)
+                )
+                
+                logger.info(f"已記錄會話 {request.session_id} 的對話輪次")
                     
         except Exception as e:
             logger.error(f"醫療分析過程中發生錯誤: {str(e)}")
@@ -186,7 +227,7 @@ async def rag_retrieve(request: RAGRetrieveRequest):
     返回 JSON 格式的回應
     """
     try:
-        logger.info(f"收到 RAG 檢索請求，問題: {request.user_question}")
+        logger.info(f"收到 RAG 檢索請求，會話ID: {request.session_id}, 問題: {request.user_question}")
         logger.info(f"檢索類型: {request.retrieval_type}")
         
         # 使用預設知識庫模板（如果沒有提供）
@@ -202,6 +243,17 @@ async def rag_retrieve(request: RAGRetrieveRequest):
         retrieved_context = await rag_client.retrieve_relevant_context(
             request.user_question, 
             knowledge_base
+        )
+        
+        # 記錄檢索結果作為對話輪次
+        # 注意：RAG檢索端點沒有FHIR資料，使用空的FHIR資料
+        empty_fhir_data = {}
+        
+        conversation_manager.add_conversation_turn(
+            request.session_id,
+            request.user_question,
+            retrieved_context or "沒有檢索到相關內容",
+            empty_fhir_data
         )
         
         return APIResponse(
@@ -220,6 +272,34 @@ async def rag_retrieve(request: RAGRetrieveRequest):
         logger.error(f"RAG 檢索過程中發生錯誤: {str(e)}")
         raise HTTPException(status_code=500, detail=f"RAG 檢索失敗: {str(e)}")
 
+
+
+# 清除會話端點
+@app.delete("/clear-session")
+async def clear_session(request: ConversationHistoryRequest):
+    """
+    清除指定會話的所有記錄
+    
+    參數:
+    - session_id: 會話ID
+    
+    返回:
+    - 清除確認
+    """
+    try:
+        conversation_manager.clear_session(request.session_id)
+        
+        return APIResponse(
+            success=True,
+            data={"session_id": request.session_id},
+            message="會話記錄清除成功",
+            timestamp=datetime.now().isoformat()
+        )
+        
+    except Exception as e:
+        logger.error(f"清除會話記錄時發生錯誤: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"清除會話記錄失敗: {str(e)}")
+
 # API 文檔端點
 @app.get("/api-docs")
 async def get_api_docs():
@@ -231,6 +311,7 @@ async def get_api_docs():
             "/": "健康檢查",
             "/analyze-stream": "醫療分析串流端點",
             "/rag-retrieve": "RAG 檢索端點（非串流）",
+            "/clear-session": "清除會話記錄",
             "/docs": "Swagger UI 文檔（FastAPI 自動生成）",
             "/redoc": "ReDoc 文檔（FastAPI 自動生成）"
         },

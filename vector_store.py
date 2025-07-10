@@ -7,7 +7,7 @@ from typing import Dict, Any, List, Optional, Tuple
 from sentence_transformers import SentenceTransformer
 import logging
 from dotenv import load_dotenv
-from knowledge_base_parser import extract_medical_documents
+from data_parser import extract_medical_documents
 
 # 載入環境變數
 load_dotenv()

@@ -5,7 +5,7 @@ import aiohttp
 from vector_store import MedicalVectorStore
 from prompt_builder import PromptBuilder
 from config import RAGConfig
-from knowledge_base_parser import extract_medical_documents
+from data_parser import extract_medical_documents
 
 logger = logging.getLogger(__name__)
 
@@ -49,9 +49,7 @@ class VectorRetrievalStrategy(RetrievalStrategy):
                 content = result['content']
                 metadata = result['metadata']
                 
-                context_parts.append(f"相關度: {score:.3f} | {content}")
-                if metadata.get('path'):
-                    context_parts.append(f"  來源: {metadata['path']}")
+                context_parts.append(content)
             
             retrieved_context = "\n".join(context_parts)
             logger.info(f"向量檢索成功，找到 {len(results)} 個相關片段")

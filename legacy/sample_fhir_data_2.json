@@ -1,0 +1,76 @@
+{
+  "Patient": {
+    "id": "patient-001",
+    "name": [{"given": ["李"], "family": "小明"}],
+    "gender": "male",
+    "birthDate": "1985-03-15"
+  },
+  "Observation": [
+    {
+      "code": {"coding": [{"display": "Blood Pressure Systolic"}]},
+      "valueQuantity": {"value": 165, "unit": "mmHg"},
+      "effectiveDateTime": "2024-01-05",
+      "status": "final"
+    },
+    {
+      "code": {"coding": [{"display": "Blood Pressure Diastolic"}]},
+      "valueQuantity": {"value": 98, "unit": "mmHg"},
+      "effectiveDateTime": "2024-01-05",
+      "status": "final"
+    },
+    {
+      "code": {"coding": [{"display": "Blood Glucose"}]},
+      "valueQuantity": {"value": 148, "unit": "mg/dL"},
+      "effectiveDateTime": "2024-01-05",
+      "status": "final"
+    },
+    {
+      "code": {"coding": [{"display": "Heart Rate"}]},
+      "valueQuantity": {"value": 90, "unit": "beats/min"},
+      "effectiveDateTime": "2024-01-05",
+      "status": "final"
+    },
+    {
+      "code": {"coding": [{"display": "Body Weight"}]},
+      "valueQuantity": {"value": 81.3, "unit": "kg"},
+      "effectiveDateTime": "2024-01-05",
+      "status": "final"
+    },
+    {
+      "code": {"coding": [{"display": "HbA1c"}]},
+      "valueQuantity": {"value": 7.8, "unit": "%"},
+      "effectiveDateTime": "2023-11-15",
+      "status": "final"
+    }
+  ],
+  "Condition": [
+    {
+      "code": {"coding": [{"display": "Hypertension"}]},
+      "clinicalStatus": {"coding": [{"code": "active"}]},
+      "severity": {"coding": [{"display": "Moderate"}]},
+      "onsetDateTime": "2023-01-01"
+    },
+    {
+      "code": {"coding": [{"display": "Diabetes Type 2"}]},
+      "clinicalStatus": {"coding": [{"code": "active"}]},
+      "severity": {"coding": [{"display": "Mild"}]},
+      "onsetDateTime": "2023-06-01"
+    }
+  ],
+  "MedicationRequest": [
+    {
+      "medicationCodeableConcept": {"coding": [{"display": "Amlodipine"}]},
+      "status": "active",
+      "intent": "order",
+      "dosage": [{"text": "5mg daily"}],
+      "authoredOn": "2023-01-15"
+    },
+    {
+      "medicationCodeableConcept": {"coding": [{"display": "Metformin"}]},
+      "status": "active",
+      "intent": "order",
+      "dosage": [{"text": "500mg twice daily"}],
+      "authoredOn": "2023-06-15"
+    }
+  ]
+} 

@@ -55,6 +55,7 @@ async def stream_response(session: aiohttp.ClientSession, url: str, payload: Dic
     print(f" {title}")
     print(f"{'='*60}")
     print(f"URL: {url}")
+    print(f"會話ID: {payload.get('session_id', 'N/A')}")
     print(f"問題: {payload.get('user_question', 'N/A')}")
     print(f"檢索類型: {payload.get('retrieval_type', 'vector')}")
     print("-" * 60)
@@ -105,6 +106,7 @@ async def non_stream_response(session: aiohttp.ClientSession, url: str, payload:
     print(f" {title}")
     print(f"{'='*60}")
     print(f"URL: {url}")
+    print(f"會話ID: {payload.get('session_id', 'N/A')}")
     print(f"問題: {payload.get('user_question', 'N/A')}")
     print(f"檢索類型: {payload.get('retrieval_type', 'vector')}")
     print("-" * 60)
@@ -121,10 +123,6 @@ async def non_stream_response(session: aiohttp.ClientSession, url: str, payload:
             if result.get('success'):
                 print("✅ 請求成功")
                 data = result.get('data', {})
-                # print(f"   檢索類型: {data.get('retrieval_type')}")
-                # print(f"   檢索內容長度: {data.get('context_length', 0)} 字符")
-                # print(f"   訊息: {result.get('message')}")
-                # print(f"   時間戳: {result.get('timestamp')}")
                 
                 # 顯示檢索內容
                 retrieved_context = data.get('retrieved_context', '')
@@ -139,6 +137,12 @@ async def non_stream_response(session: aiohttp.ClientSession, url: str, payload:
     except Exception as e:
         print(f"❌ 連接錯誤: {str(e)}")
 
+
+
+
+
+
+
 async def example_medical_analysis():
     """範例：醫療分析串流"""
     print("\n🎯 醫療分析串流範例")
@@ -146,9 +150,10 @@ async def example_medical_analysis():
     async with aiohttp.ClientSession() as session:
         # 1. 使用自定義知識庫 + 向量檢索
         payload1 = {
+            "session_id": "example_session_1",
             "knowledge_base": CUSTOM_KNOWLEDGE_BASE,
             "fhir_data": SAMPLE_FHIR_DATA,
-            "user_question": "高血壓的人要吃甚麼?",
+            "user_question": "痛風的症狀?",
             "retrieval_type": "vector"
         }
         
@@ -159,33 +164,20 @@ async def example_medical_analysis():
             "醫療分析串流（自定義知識庫 + 向量檢索）"
         )
         
-        # 2. 使用自定義知識庫 + LLM 檢索
-        payload2 = {
-            "knowledge_base": CUSTOM_KNOWLEDGE_BASE,
-            "fhir_data": SAMPLE_FHIR_DATA,
-            "user_question": "高血壓的人要吃甚麼?",
-            "retrieval_type": "llm"
-        }
-        
-        await stream_response(
-            session,
-            f"{BASE_URL}/analyze-stream",
-            payload2,
-            "醫療分析串流（自定義知識庫 + LLM 檢索）"
-        )
-        
-        # # 3. 使用預設知識庫
-        # payload3 = {
+        # # 2. 使用自定義知識庫 + LLM 檢索
+        # payload2 = {
+        #     "session_id": "example_session_2",
+        #     "knowledge_base": CUSTOM_KNOWLEDGE_BASE,
         #     "fhir_data": SAMPLE_FHIR_DATA,
-        #     "user_question": "根據我的高血壓和糖尿病病史，請提供詳細的治療建議、藥物注意事項和生活方式調整建議。",
-        #     "retrieval_type": "vector"
+        #     "user_question": "高血壓的人要吃甚麼?",
+        #     "retrieval_type": "llm"
         # }
         
         # await stream_response(
         #     session,
         #     f"{BASE_URL}/analyze-stream",
-        #     payload3,
-        #     "醫療分析串流（預設知識庫）"
+        #     payload2,
+        #     "醫療分析串流（自定義知識庫 + LLM 檢索）"
         # )
 
 async def example_rag_retrieval():
@@ -195,8 +187,9 @@ async def example_rag_retrieval():
     async with aiohttp.ClientSession() as session:
         # 1. 向量檢索
         payload1 = {
+            "session_id": "rag_session_1",
             "knowledge_base": CUSTOM_KNOWLEDGE_BASE,
-            "user_question": "高血壓的人要吃甚麼?",
+            "user_question": "飲食建議",
             "retrieval_type": "vector"
         }
         
@@ -209,6 +202,7 @@ async def example_rag_retrieval():
         
         # 2. LLM 檢索
         payload2 = {
+            "session_id": "rag_session_2",
             "knowledge_base": CUSTOM_KNOWLEDGE_BASE,
             "user_question": "高血壓的人要吃甚麼?",
             "retrieval_type": "llm"
@@ -220,19 +214,6 @@ async def example_rag_retrieval():
             payload2,
             "RAG 檢索（LLM 檢索）"
         )
-        
-        # # 3. 使用預設知識庫
-        # payload3 = {
-        #     "user_question": "高血壓和糖尿病的症狀、治療方法和注意事項有哪些？",
-        #     "retrieval_type": "vector"
-        # }
-        
-        # await non_stream_response(
-        #     session,
-        #     f"{BASE_URL}/rag-retrieve",
-        #     payload3,
-        #     "RAG 檢索（預設知識庫）"
-        # )
 
 async def check_api_health():
     """檢查 API 健康狀態"""
@@ -277,7 +258,7 @@ async def main():
     
     # 執行範例
     try:
-        await example_rag_retrieval()
+        # await example_rag_retrieval()
         await example_medical_analysis()
         
         print("\n" + "=" * 60)
