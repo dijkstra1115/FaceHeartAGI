@@ -40,7 +40,7 @@ conversation_manager = ConversationManager()
 def load_default_knowledge_base():
     """載入預設知識庫"""
     try:
-        with open('default_knowledge_base.json', 'r', encoding='utf-8') as f:
+        with open('./knowledge/default_knowledge_base.json', 'r', encoding='utf-8') as f:
             return json.load(f)
     except FileNotFoundError:
         logger.warning("預設知識庫檔案不存在，使用空知識庫")

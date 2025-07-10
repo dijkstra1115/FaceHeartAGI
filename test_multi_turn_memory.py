@@ -27,7 +27,7 @@ def load_fhir_data_files():
     fhir_data_list = []
     
     for i in range(1, 7):  # 載入 sample_fhir_data_1.json 到 sample_fhir_data_6.json
-        filename = f'fhir_{i}.json'
+        filename = f'./fhir/fhir_{i}.json'
         try:
             with open(filename, 'r', encoding='utf-8') as f:
                 data = json.load(f)
@@ -46,7 +46,7 @@ def load_fhir_data_files():
 def load_custom_knowledge_base():
     """載入自定義知識庫"""
     try:
-        with open('hypertension_data.json', 'r', encoding='utf-8') as f:
+        with open('./knowledge/hypertension_data.json', 'r', encoding='utf-8') as f:
             return json.load(f)
     except FileNotFoundError:
         logger.warning("自定義知識庫檔案不存在")
