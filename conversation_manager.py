@@ -8,6 +8,11 @@ from prompt_builder import PromptBuilder
 
 logger = logging.getLogger(__name__)
 
+# TODO:
+# 1. add_conversation_turn 的 system_response 可以只記錄 </think> 後的輸出
+# 2. format_conversation_history_for_prompt 的 system_response 可以只記錄 </think> 後的輸出
+# 3. 增加資料庫來記錄對話
+
 class ConversationManager:
     """對話管理器，負責記錄對話歷史和生成摘要"""
     
@@ -20,7 +25,8 @@ class ConversationManager:
         self.conversation_summaries: Dict[str, List[str]] = {}
         # 最大保存的對話輪數
         self.max_conversations = 10
-        
+
+
     def add_conversation_turn(self, session_id: str, user_question: str, 
                             system_response: str, fhir_data: str) -> None:
         """
@@ -78,7 +84,8 @@ class ConversationManager:
                 thread = threading.Thread(target=run_async_summary)
                 thread.daemon = True
                 thread.start()
-    
+
+
     def get_conversation_history(self, session_id: str) -> List[Dict[str, Any]]:
         """
         獲取指定會話的對話歷史
@@ -90,7 +97,8 @@ class ConversationManager:
             對話歷史列表
         """
         return self.conversations.get(session_id, [])
-    
+
+
     def get_conversation_summaries(self, session_id: str) -> List[str]:
         """
         獲取指定會話的摘要
@@ -102,7 +110,8 @@ class ConversationManager:
             摘要列表
         """
         return self.conversation_summaries.get(session_id, [])
-    
+
+
     def get_recent_conversations(self, session_id: str, count: int = 3) -> List[Dict[str, Any]]:
         """
         獲取最近的對話記錄
@@ -116,53 +125,7 @@ class ConversationManager:
         """
         conversations = self.conversations.get(session_id, [])
         return conversations[-count:] if conversations else []
-    
-    
-    def get_conversation_context_for_llm(self, session_id: str) -> List[Dict[str, str]]:
-        """
-        獲取用於LLM的對話上下文，格式化為對話消息列表
-        根據新的邏輯：當歷史長度 > 5 時，傳入最近幾輪加上摘要
         
-        Args:
-            session_id: 會話ID
-            
-        Returns:
-            格式化的對話消息列表，適合用於LLM輸入
-        """
-        conversations = self.conversations.get(session_id, [])
-        messages = []
-        
-        if not conversations:
-            return messages
-        
-        # 如果對話輪數 <= 5，返回所有對話
-        if len(conversations) <= 5:
-            recent_conversations = conversations
-        else:
-            # 如果對話輪數 > 5，返回最近幾輪（len(conversations) - 5）
-            recent_count = len(conversations) - 5
-            recent_conversations = conversations[-recent_count:]
-        
-        # 將對話記錄轉換為LLM對話格式
-        for conv in recent_conversations:
-            # 構建包含FHIR資料的用戶消息
-            user_content = f"用戶問題: {conv['user_intent']}\n"
-            if conv.get('fhir_data'):
-                user_content += f"FHIR資料: {json.dumps(conv['fhir_data'], ensure_ascii=False, indent=2)}\n"
-            
-            # 添加用戶消息
-            messages.append({
-                "role": "user",
-                "content": user_content
-            })
-            # 添加助手回應
-            messages.append({
-                "role": "assistant", 
-                "content": conv["system_response"]
-            })
-        
-        return messages
-    
     
     def format_conversation_history_for_prompt(self, session_id: str) -> str:
         """

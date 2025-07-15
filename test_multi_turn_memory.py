@@ -20,7 +20,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # API 基礎 URL
-BASE_URL = "http://localhost:8000"
+BASE_URL = "http://localhost:8500"
 
 def load_fhir_data_files():
     """載入所有 FHIR 資料檔案"""

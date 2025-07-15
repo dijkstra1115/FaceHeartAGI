@@ -6,8 +6,11 @@ class RAGConfig:
     """RAG 系統配置管理"""
     
     # API 配置
-    BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
-    DEFAULT_MODEL = "deepseek/deepseek-r1:free"
+    # BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
+    # DEFAULT_MODEL = "deepseek/deepseek-r1:free"
+
+    BASE_URL = "http://172.24.186.27:8000/v1/chat/completions"
+    DEFAULT_MODEL = "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B"
     
     # 請求配置
     DEFAULT_MAX_TOKENS = 2000
