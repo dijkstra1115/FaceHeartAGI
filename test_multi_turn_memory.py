@@ -61,8 +61,8 @@ CUSTOM_KNOWLEDGE_BASE = load_custom_knowledge_base()
 
 async def send_question(session: aiohttp.ClientSession, session_id: str, question: str, turn_number: int, fhir_data: Dict[str, Any]):
     """發送問題並獲取回應"""
-    print(f"\n--- 第 {turn_number} 輪對話 ---")
-    print(f"用戶問題: {question}")
+    print(f"\n--- Turn {turn_number} ---")
+    print(f"❓ User Question: {question}")
     
     payload = {
         "session_id": session_id,
@@ -75,7 +75,7 @@ async def send_question(session: aiohttp.ClientSession, session_id: str, questio
     try:
         async with session.post(f"{BASE_URL}/analyze-stream", json=payload) as response:
             if response.status == 200:
-                print("系統回應:")
+                print("🤖 System Response:")
                 
                 # 收集完整回應
                 full_response = ""
@@ -117,9 +117,14 @@ async def test_sequential_conversation():
     
     # 設計一系列相關的問題，測試LLM的記憶能力
     questions = [
-        "高血壓有什麼樣的症狀?",
-        "根據我的 FHIR 資料，有什麼潛在需要注意的問題嗎?",
-        "我的 FHIR 歷史趨勢有什麼變化?"
+        "What are the symptoms of hypertension?",
+        "What are the potential risks based on my FHIR data?",
+        "What are the changes in my FHIR history?"
+        # "What are the recommendations for my health?",
+        # "What kind of food should I eat?",
+        # "What kind of ingredients should I avoid?",
+        # "What are the changes in my FHIR history?",
+        # "What I just said?"
     ]
     
     async with aiohttp.ClientSession() as session:

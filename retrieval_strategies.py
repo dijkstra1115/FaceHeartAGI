@@ -87,8 +87,13 @@ class LLMRetrievalStrategy(RetrievalStrategy):
                     "content": retrieval_prompt
                 }
             ]
-            
-            payload = RAGConfig.get_retrieval_payload(messages)
+
+            payload = {
+                "model": RAGConfig.DEFAULT_MODEL,
+                "messages": messages,
+                "max_tokens": RAGConfig.DEFAULT_MAX_TOKENS,
+                "temperature": RAGConfig.RETRIEVAL_TEMPERATURE
+            }
             
             async with aiohttp.ClientSession() as session:
                 async with session.post(

@@ -187,7 +187,7 @@ class ConversationManager:
         if summaries and len(conversations) > 5:
             history_text += "**Conversation Summary**\n"
             for i, summary in enumerate(summaries, 1):
-                history_text += f"Summary {i}: {summary}\n"
+                history_text += f"Summary {i}:\n {summary}\n"
             history_text += "\n"
         
         # 添加最近的對話記錄

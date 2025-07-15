@@ -154,7 +154,6 @@ Please answer the question based on the above information. If there is conversat
 **User Intent**\n{conv['user_intent']}\n
 **FHIR Data**\n{conv['fhir_data']}\n
 **System Response**\n{conv['system_response'][:200]}{'...' if len(conv['system_response']) > 200 else ''}
-
 """
         
         prompt = f"""

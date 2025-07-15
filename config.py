@@ -31,12 +31,3 @@ class RAGConfig:
             "X-Title": "FaceHeartAGI",
         }
     
-    @classmethod
-    def get_retrieval_payload(cls, messages: list) -> Dict[str, Any]:
-        """獲取檢索請求的 payload"""
-        return {
-            "model": cls.DEFAULT_MODEL,
-            "messages": messages,
-            "max_tokens": cls.DEFAULT_MAX_TOKENS,
-            "temperature": cls.RETRIEVAL_TEMPERATURE
-        } 
