@@ -138,11 +138,6 @@ async def non_stream_response(session: aiohttp.ClientSession, url: str, payload:
         print(f"❌ 連接錯誤: {str(e)}")
 
 
-
-
-
-
-
 async def example_medical_analysis():
     """範例：醫療分析串流"""
     print("\n🎯 醫療分析串流範例")

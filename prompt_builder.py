@@ -75,10 +75,7 @@ If no relevant content is found, please return "No relevant content retrieved."
         # Add conversation history to prompt if available
         history_section = ""
         if conversation_history:
-            history_section = f"""
-### Conversation History ###
-{conversation_history}
-"""
+            history_section = f"### Conversation History ###\n{conversation_history}"
 
         prompt = f"""
 ### Response Rules ###

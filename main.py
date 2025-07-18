@@ -273,7 +273,6 @@ async def rag_retrieve(request: RAGRetrieveRequest):
         raise HTTPException(status_code=500, detail=f"RAG 檢索失敗: {str(e)}")
 
 
-
 # 清除會話端點
 @app.delete("/clear-session")
 async def clear_session(request: ConversationHistoryRequest):
