@@ -11,6 +11,9 @@ class RAGConfig:
 
     BASE_URL = "http://172.24.186.27:8000/v1/chat/completions"
     DEFAULT_MODEL = "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B"
+
+    FACEHEART_API_PORT = 8500
+    FACEHEART_API_URL = f"http://localhost:{FACEHEART_API_PORT}"
     
     # 請求配置
     DEFAULT_MAX_TOKENS = 2000

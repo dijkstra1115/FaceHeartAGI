@@ -12,6 +12,7 @@ import asyncio
 from rag_client import RAGClient
 from conversation_manager import ConversationManager
 from data_parser import observation_parser
+from config import RAGConfig
 
 # 設定日誌
 logging.basicConfig(level=logging.INFO)
@@ -334,7 +335,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=8500,
+        port=RAGConfig.FACEHEART_API_PORT,
         reload=True,
         log_level="info"
     ) 
