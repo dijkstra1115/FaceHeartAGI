@@ -9,8 +9,8 @@ class RAGConfig:
     # BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
     # DEFAULT_MODEL = "deepseek/deepseek-r1:free"
 
-    BASE_URL = "http://172.24.186.27:8000/v1/chat/completions"
-    DEFAULT_MODEL = "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B"
+    BASE_URL = "http://localhost:8000/v1/chat/completions"
+    DEFAULT_MODEL = "deepseek-qwen7b"
 
     FACEHEART_API_PORT = 8500
     FACEHEART_API_URL = f"http://localhost:{FACEHEART_API_PORT}"

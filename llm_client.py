@@ -47,7 +47,6 @@ class LLMClient:
             async with aiohttp.ClientSession() as session:
                 async with session.post(
                     url=self.base_url,
-                    headers=self.headers,
                     json=payload
                 ) as response:
                     if response.status != 200:

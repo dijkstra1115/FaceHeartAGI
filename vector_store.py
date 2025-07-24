@@ -25,7 +25,8 @@ class VectorStore:
             model_name: 句子嵌入模型名稱
         """
         self.model_name = model_name
-        self.encoder = SentenceTransformer(model_name)
+        self.model_path = "/home/llm/embedding-models/paraphrase-multilingual-MiniLM-L12-v2"
+        self.encoder = SentenceTransformer(self.model_path)
         self.index = None
         self.documents = []
         self.metadata = []
