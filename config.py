@@ -13,7 +13,7 @@ class RAGConfig:
     DEFAULT_MODEL = "deepseek-qwen7b"
 
     FACEHEART_API_PORT = 8500
-    FACEHEART_API_URL = f"http://localhost:{FACEHEART_API_PORT}"
+    FACEHEART_API_URL = f"http://118.167.10.236:{FACEHEART_API_PORT}"
     
     # 請求配置
     DEFAULT_MAX_TOKENS = 2000
