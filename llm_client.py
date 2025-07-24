@@ -5,7 +5,6 @@ from typing import Dict, Any, Optional, List, AsyncGenerator
 from dotenv import load_dotenv
 import asyncio
 import aiohttp
-from config import RAGConfig
 
 # 載入環境變數
 load_dotenv()
@@ -19,9 +18,8 @@ class LLMClient:
         if not self.api_key:
             raise ValueError("請設定 OPENROUTER_API_KEY 環境變數")
         
-        self.base_url = RAGConfig.BASE_URL
-        self.model = RAGConfig.DEFAULT_MODEL
-        self.headers = RAGConfig.get_headers()
+        self.base_url = os.getenv("LLM_BASE_URL", "http://localhost:8000/v1/chat/completions")
+        self.model = os.getenv("LLM_DEFAULT_MODEL", "deepseek-qwen7b")
 
     async def generate_response_stream(self, messages: List[Dict[str, str]], max_tokens: int = 1000, temperature: float = 0.7) -> AsyncGenerator[str, None]:
         """
@@ -95,7 +93,6 @@ class LLMClient:
             async with aiohttp.ClientSession() as session:
                 async with session.post(
                     url=self.base_url,
-                    headers=self.headers,
                     json=payload
                 ) as response:
                     if response.status != 200:

@@ -2,9 +2,9 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Dict, Any
 import aiohttp
+import os
 from vector_store import MedicalVectorStore
 from prompt_builder import PromptBuilder
-from config import RAGConfig
 from data_parser import extract_medical_documents
 
 logger = logging.getLogger(__name__)
@@ -35,7 +35,7 @@ class VectorRetrievalStrategy(RetrievalStrategy):
             # 使用向量檢索
             results = self.vector_store.search_medical_context(
                 user_question, 
-                top_k=RAGConfig.VECTOR_SEARCH_TOP_K
+                top_k=int(os.getenv("VECTOR_SEARCH_TOP_K", 5))
             )
             
             if not results:
@@ -89,16 +89,15 @@ class LLMRetrievalStrategy(RetrievalStrategy):
             ]
 
             payload = {
-                "model": RAGConfig.DEFAULT_MODEL,
+                "model": os.getenv("LLM_DEFAULT_MODEL", "deepseek-qwen7b"),
                 "messages": messages,
-                "max_tokens": RAGConfig.DEFAULT_MAX_TOKENS,
-                "temperature": RAGConfig.RETRIEVAL_TEMPERATURE
+                "max_tokens": int(os.getenv("LLM_DEFAULT_MAX_TOKENS", 2000)),
+                "temperature": float(os.getenv("LLM_RETRIEVAL_TEMPERATURE", 0.1))
             }
             
             async with aiohttp.ClientSession() as session:
                 async with session.post(
-                    url=RAGConfig.BASE_URL,
-                    headers=RAGConfig.get_headers(),
+                    url=os.getenv("LLM_BASE_URL", "http://localhost:8000/v1/chat/completions"),
                     json=payload
                 ) as response:
                     if response.status == 200:

@@ -4,6 +4,7 @@ from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 from typing import Dict, Any, Optional, List, AsyncGenerator
 import uvicorn
+import os
 import json
 import logging
 from datetime import datetime
@@ -12,7 +13,6 @@ import asyncio
 from rag_client import RAGClient
 from conversation_manager import ConversationManager
 from data_parser import observation_parser
-from config import RAGConfig
 
 # 設定日誌
 logging.basicConfig(level=logging.INFO)
@@ -334,8 +334,8 @@ async def get_api_docs():
 if __name__ == "__main__":
     uvicorn.run(
         "main:app",
-        host="0.0.0.0",
-        port=RAGConfig.FACEHEART_API_PORT,
+        host=os.getenv("API_HOST", "0.0.0.0"),
+        port=int(os.getenv("FACEHEART_API_PORT", 8500)),
         reload=True,
-        log_level="info"
+        log_level=os.getenv("LOG_LEVEL", "info")
     ) 

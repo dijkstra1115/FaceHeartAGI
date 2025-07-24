@@ -1,9 +1,9 @@
 import logging
 from typing import Dict, Any, Optional, AsyncGenerator
 from dotenv import load_dotenv
+import os
 from llm_client import LLMClient
 from prompt_builder import PromptBuilder
-from config import RAGConfig
 from retrieval_strategies import VectorRetrievalStrategy, LLMRetrievalStrategy
 
 # 載入環境變數
@@ -96,8 +96,8 @@ class RAGClient:
         logger.info("開始生成基礎回應（streaming）...")
         async for chunk in self.llm_client.generate_response_stream(
             messages, 
-            max_tokens=RAGConfig.DEFAULT_MAX_TOKENS, 
-            temperature=RAGConfig.ENHANCEMENT_TEMPERATURE
+            max_tokens=int(os.getenv("LLM_DEFAULT_MAX_TOKENS", 2000)), 
+            temperature=float(os.getenv("LLM_ENHANCEMENT_TEMPERATURE", 0.3))
         ):
             yield chunk
     
@@ -124,8 +124,8 @@ class RAGClient:
         logger.info("開始生成增強回應（streaming）...")
         async for chunk in self.llm_client.generate_response_stream(
             messages, 
-            max_tokens=RAGConfig.DEFAULT_MAX_TOKENS, 
-            temperature=RAGConfig.ENHANCEMENT_TEMPERATURE
+            max_tokens=int(os.getenv("LLM_DEFAULT_MAX_TOKENS", 2000)), 
+            temperature=float(os.getenv("LLM_ENHANCEMENT_TEMPERATURE", 0.3))
         ):
             yield chunk
     

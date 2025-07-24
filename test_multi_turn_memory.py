@@ -14,14 +14,16 @@ import aiohttp
 import json
 import logging
 from typing import Dict, Any
-from config import RAGConfig
+import os
 
 # 設定日誌
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # API 基礎 URL
-BASE_URL = RAGConfig.FACEHEART_API_URL
+API_PORT = os.getenv("FACEHEART_API_PORT")
+API_URL = os.getenv("FACEHEART_API_URL")
+BASE_URL = f"{API_URL}:{API_PORT}"
 
 def load_fhir_data_files():
     """載入所有 FHIR 資料檔案"""
