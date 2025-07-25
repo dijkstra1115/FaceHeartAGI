@@ -15,6 +15,9 @@ import json
 import logging
 from typing import Dict, Any
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # 設定日誌
 logging.basicConfig(level=logging.INFO)
@@ -178,6 +181,7 @@ async def main():
     """主函數"""
     print("🧠 FaceHeartAGI 多輪對話記憶效果測試")
     print("=" * 60)
+    print(BASE_URL)
     
     # 檢查資料檔案
     if not FHIR_DATA_LIST or all(not data for data in FHIR_DATA_LIST):

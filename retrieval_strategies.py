@@ -6,6 +6,9 @@ import os
 from vector_store import MedicalVectorStore
 from prompt_builder import PromptBuilder
 from data_parser import extract_medical_documents
+from dotenv import load_dotenv
+
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
