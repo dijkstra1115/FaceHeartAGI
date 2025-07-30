@@ -7,6 +7,7 @@ from vector_store import MedicalVectorStore
 from prompt_builder import PromptBuilder
 from data_parser import extract_medical_documents
 from dotenv import load_dotenv
+from llm_client import LLMClient
 
 load_dotenv()
 
@@ -17,7 +18,7 @@ class RetrievalStrategy(ABC):
     """檢索策略抽象基類"""
     
     @abstractmethod
-    async def retrieve(self, user_question: str, database_content: Dict[str, Any]) -> str:
+    def retrieve(self, user_question: str, database_content: Dict[str, Any]) -> str:
         """執行檢索"""
         pass
 
@@ -28,7 +29,7 @@ class VectorRetrievalStrategy(RetrievalStrategy):
     def __init__(self):
         self.vector_store = MedicalVectorStore()
     
-    async def retrieve(self, user_question: str, database_content: Dict[str, Any]) -> str:
+    def retrieve(self, user_question: str, database_content: Dict[str, Any]) -> str:
         """使用向量檢索"""
         try:
             # 動態創建向量資料庫
@@ -66,6 +67,9 @@ class VectorRetrievalStrategy(RetrievalStrategy):
 class LLMRetrievalStrategy(RetrievalStrategy):
     """LLM 檢索策略"""
     
+    def __init__(self):
+        self.llm_client = LLMClient()
+
     async def retrieve(self, user_question: str, database_content: Dict[str, Any]) -> str:
         """使用 LLM 檢索方法（非 streaming）"""
         try:
@@ -91,28 +95,12 @@ class LLMRetrievalStrategy(RetrievalStrategy):
                 }
             ]
 
-            payload = {
-                "model": os.getenv("LLM_DEFAULT_MODEL", "deepseek-qwen7b"),
-                "messages": messages,
-                "max_tokens": int(os.getenv("LLM_DEFAULT_MAX_TOKENS", 2000)),
-                "temperature": float(os.getenv("LLM_RETRIEVAL_TEMPERATURE", 0.1))
-            }
-            
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    url=os.getenv("LLM_BASE_URL", "http://localhost:8000/v1/chat/completions"),
-                    json=payload
-                ) as response:
-                    if response.status == 200:
-                        result = await response.json()
-                        retrieved_context = result['choices'][0]['message']['content']
-                        logger.info(f"LLM 檢索成功，長度: {len(retrieved_context)} 字符")
-                        return retrieved_context
-                    else:
-                        error_text = await response.text()
-                        logger.error(f"檢索請求失敗: {response.status} - {error_text}")
-                        return ""
+            return await self.llm_client.generate_response(
+                messages,
+                max_tokens=int(os.getenv("LLM_DEFAULT_MAX_TOKENS", 2000)),
+                temperature=float(os.getenv("LLM_RETRIEVAL_TEMPERATURE", 0.1))
+            )
                 
         except Exception as e:
             logger.error(f"LLM 檢索過程中發生錯誤: {str(e)}")
-            return "" 
+            return "" "" 

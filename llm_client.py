@@ -69,7 +69,7 @@ class LLMClient:
         except Exception as e:
             raise Exception(f"LLM 異步串流回應生成失敗: {str(e)}")
 
-    async def generate_response_async(self, messages: List[Dict[str, str]], max_tokens: int = 1000, temperature: float = 0.7) -> str:
+    async def generate_response(self, messages: List[Dict[str, str]], max_tokens: int = 1000, temperature: float = 0.7) -> str:
         """
         生成 LLM 回應（異步模式）
         

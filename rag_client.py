@@ -1,10 +1,11 @@
 import logging
+import asyncio
 from typing import Dict, Any, Optional, AsyncGenerator
 from dotenv import load_dotenv
 import os
 from llm_client import LLMClient
 from prompt_builder import PromptBuilder
-from retrieval_strategies import VectorRetrievalStrategy, LLMRetrievalStrategy
+from retrieval_strategies import VectorRetrievalStrategy, LLMRetrievalStrategy, RetrievalStrategy
 
 # 載入環境變數
 load_dotenv()
@@ -21,7 +22,7 @@ class RAGClient:
         # 初始化 LLM 客戶端
         self.llm_client = LLMClient()
     
-    async def retrieve_relevant_context(self, retrieval_strategy, user_question: str, database_content: Dict[str, Any]) -> str:
+    async def retrieve_relevant_context(self, retrieval_strategy: RetrievalStrategy, user_question: str, database_content: Dict[str, Any]) -> str:
         """
         從資料庫中檢索相關內容
         
@@ -33,7 +34,10 @@ class RAGClient:
         Returns:
             檢索到的相關內容
         """
-        return await retrieval_strategy.retrieve(user_question, database_content)
+        if asyncio.iscoroutinefunction(retrieval_strategy.retrieve):
+            return await retrieval_strategy.retrieve(user_question, database_content)
+        else:
+            return retrieval_strategy.retrieve(user_question, database_content)
     
     async def enhance_response_with_rag_stream(self, user_question: str, fhir_data: str, 
                                              database_content: Dict[str, Any], retrieval_type: str, conversation_history: str = "") -> AsyncGenerator[str, None]:
