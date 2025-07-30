@@ -13,7 +13,7 @@ import asyncio
 
 from rag_client import RAGClient
 from conversation_manager import ConversationManager
-from data_parser import observation_parser
+from data_parser import parser_fhir
 
 load_dotenv()
 
@@ -62,7 +62,7 @@ class MedicalAnalysisRequest(BaseModel):
     session_id: str  # 會話ID，用於記錄對話歷史
     knowledge_base: Optional[Dict[str, Any]] = None  # 知識庫內容（若無提供則使用預設知識庫模板）
     user_question: str  # 用戶問題
-    fhir_data: Dict[str, Any]  # 個人 FHIR 資料
+    fhir_data: str  # 個人 FHIR 資料
     retrieval_type: str = "vector"  # LLM 或向量檢索 ("llm" 或 "vector")
     additional_context: Optional[Dict[str, Any]] = None
 
@@ -148,7 +148,7 @@ async def analyze_stream(request: MedicalAnalysisRequest):
             async for chunk in format_streaming_response(
                 rag_client.enhance_response_with_rag_stream(
                     request.user_question,
-                    observation_parser(request.fhir_data),
+                    parser_fhir(json.loads(request.fhir_data)),
                     knowledge_base,
                     request.retrieval_type,
                     conversation_history

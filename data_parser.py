@@ -124,6 +124,7 @@ VITAL_SIGNS = {
     "8462-4": "Diastolic blood pressure"
 }
 
+
 def get_patient_id(observation):
     ref = observation.get("subject", {}).get("reference", "")
     return ref.replace("Patient/", "") if ref else "Unknown"
@@ -165,3 +166,41 @@ def observation_parser(observation: Dict[str, Any]) -> str:
         lines.append("(No available vital signs)")
 
     return "\n".join(lines)
+
+
+def parser_fhir(bundle: Dict[str, Any]) -> str:
+    # 1. 取得 Patient ID
+    patient_id = None
+    for entry in bundle.get('entry', []):
+        res = entry.get('resource', {})
+        if res.get('resourceType') == 'Patient':
+            # 優先 identifier.value，否則用 id
+            identifiers = res.get('identifier', [])
+            if identifiers:
+                patient_id = identifiers[0].get('value')
+            else:
+                patient_id = res.get('id')
+            break
+
+    # 2. 處理所有 Observation entries
+    outputs = []
+    for entry in bundle.get('entry', []):
+        res = entry.get('resource', {})
+        if res.get('resourceType') != 'Observation':
+            continue
+
+        ts = res.get('effectiveDateTime', 'N/A')
+        header = f"(Patient: {patient_id}, {ts})"
+        lines = []
+
+        for comp in res['component']:
+            coding = comp.get('code', {}).get('coding', [{}])[0]
+            name = coding.get('display', coding.get('code', 'Unknown'))
+            qty = comp.get('valueQuantity', {})
+            val = qty.get('value', 'N/A')
+            unit = qty.get('unit', '')
+            lines.append(f"- {name}: {val} {unit}")
+
+        outputs.append("\n".join([header] + lines))
+
+    return "\n\n".join(outputs)

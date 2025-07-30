@@ -1,0 +1,94 @@
+{
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:dea860f6-bcbf-1c79-7210-1609d31980f5",
+      "resource": {
+        "id": "A0001",
+        "identifier": [
+          {
+            "system": "https://your-dialysis-center.tw/observations",
+            "value": "A0001"
+          }
+        ],
+        "resourceType": "Patient"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:42797530-a045-0f6f-a92e-ee0390d006f9",
+      "resource": {
+        "component": [
+          {
+            "code": {
+              "coding": [
+                {
+                  "code": "8867-4",
+                  "display": "Heart rate",
+                  "system": "http://loinc.org"
+                }
+              ]
+            },
+            "valueQuantity": {
+              "unit": "beats/minute",
+              "value": -1.0
+            }
+          },
+          {
+            "code": {
+              "coding": [
+                {
+                  "code": "8480-6",
+                  "display": "Systolic blood pressure",
+                  "system": "http://loinc.org"
+                }
+              ]
+            },
+            "valueQuantity": {
+              "unit": "mm[Hg]",
+              "value": 0.0
+            }
+          },
+          {
+            "code": {
+              "coding": [
+                {
+                  "code": "8462-4",
+                  "display": "Diastolic blood pressure",
+                  "system": "http://loinc.org"
+                }
+              ]
+            },
+            "valueQuantity": {
+              "unit": "mm[Hg]",
+              "value": 0.0
+            }
+          },
+          {
+            "code": {
+              "coding": [
+                {
+                  "code": "59408-5",
+                  "display": "Oxygen saturation",
+                  "system": "http://loinc.org"
+                }
+              ]
+            },
+            "valueQuantity": {
+              "unit": "%",
+              "value": 0.0
+            }
+          }
+        ],
+        "effectiveDateTime": "2025-07-28T15:55:00+08:00",
+        "id": "vitals-A0001-0b6fe0eb",
+        "resourceType": "Observation",
+        "status": "final",
+        "subject": {
+          "reference": "Patient/A0001"
+        }
+      }
+    }
+  ],
+  "id": "bundle-e47712c3-098c-18bf-596d-dc4a9f7f6b7e",
+  "resourceType": "Bundle",
+  "type": "collection"
+}
