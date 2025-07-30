@@ -75,34 +75,34 @@ If no relevant content is found, please return "No relevant content retrieved."
         # Add conversation history to prompt if available
         history_section = ""
         if conversation_history:
-            history_section = f"### Conversation History ###\n{conversation_history}"
+            history_section = f"### Prior Conversation History ###\n{conversation_history}"
 
-        prompt = f"""
-### Response Rules ###
-1. Avoid answering questions that are not present in the retrieved content
-2. If unable to answer, please honestly inform the user
-3. If the current question is related to previous conversations, please appropriately reference or continue previous suggestions
-4. Use English to respond
-
-{history_section}
-
-### User Question ###
+        prompt = f"""{history_section}
+### Current User Question ###
 {user_question}
 
-### FHIR Data ###
+### Current FHIR Data ###
 {fhir_data}
 
-### Retrieved Content ###
+### Retrieved Knowledge ###
 {retrieved_context}
 
+### Response Rules (Strictly Enforced) ###
+1. Only respond based on the ### Current FHIR Data ###, ### Prior Conversation History ###, and ### Retrieved Knowledge ###.
+2. DO NOT guess or hallucinate. If no relevant information is available, respond: "I cannot answer based on the available data."
+3. Always maintain coherence with [Previous Turns] in the ### Prior Conversation History ###.
+4. Use English only.
+
 ### Thinking Process ###
-1. Integrate FHIR data and retrieved content
-2. Determine if the user question is within the retrieved content
-3. Consider conversation history to ensure response coherence
+1. Summarize the ### Current FHIR Data ### and all historical FHIR from ### Prior Conversation History ###.
+2. Compare the ### Current FHIR Data ### data with historical FHIR to identify any trends or significant changes.
+3. Use relevant information from the ### Current FHIR Data ### and historical FHIR to answer ### Current User Question ###.
+4. Use relevant information from the ### Retrieved Knowledge ### to support or contextualize the answer if applicable.
+5. Use relevant information from the ### Prior Conversation History ### to ensure the response is coherent and contextually aligned.
 
 ### Objective ###
-1. Please follow the steps in ### Thinking Process ###, maintain professionalism and accuracy, and generate a concise and accurate response
-2. Ensure strict adherence to ### Response Rules ###
+1. Follow the steps in ### Thinking Process ###, maintain professionalism and accuracy, and generate a concise and accurate response.
+2. Ensure strict adherence to ### Response Rules ###.
 """
         return prompt
     

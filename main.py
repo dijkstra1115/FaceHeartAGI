@@ -178,7 +178,7 @@ async def analyze_stream(request: MedicalAnalysisRequest):
                     request.session_id,
                     request.user_question,
                     full_response,
-                    observation_parser(request.fhir_data)
+                    parser_fhir(json.loads(request.fhir_data))
                 )
                 
                 logger.info(f"已記錄會話 {request.session_id} 的對話輪次")

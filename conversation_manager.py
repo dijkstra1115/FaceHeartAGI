@@ -83,47 +83,6 @@ class ConversationManager:
                 thread = threading.Thread(target=run_async_summary)
                 thread.daemon = True
                 thread.start()
-
-
-    def get_conversation_history(self, session_id: str) -> List[Dict[str, Any]]:
-        """
-        獲取指定會話的對話歷史
-        
-        Args:
-            session_id: 會話ID
-            
-        Returns:
-            對話歷史列表
-        """
-        return self.conversations.get(session_id, [])
-
-
-    def get_conversation_summaries(self, session_id: str) -> List[str]:
-        """
-        獲取指定會話的摘要
-        
-        Args:
-            session_id: 會話ID
-            
-        Returns:
-            摘要列表
-        """
-        return self.conversation_summaries.get(session_id, [])
-
-
-    def get_recent_conversations(self, session_id: str, count: int = 3) -> List[Dict[str, Any]]:
-        """
-        獲取最近的對話記錄
-        
-        Args:
-            session_id: 會話ID
-            count: 要獲取的對話輪數
-            
-        Returns:
-            最近的對話記錄
-        """
-        conversations = self.conversations.get(session_id, [])
-        return conversations[-count:] if conversations else []
         
     
     def format_conversation_history_for_prompt(self, session_id: str) -> str:
@@ -147,9 +106,9 @@ class ConversationManager:
                 
         # 如果有摘要且對話輪數 > 5，先添加摘要
         if summaries and len(conversations) > 5:
-            history_text += "**Conversation Summary**\n"
+            history_text += "### Conversation Summary ###\n"
             for i, summary in enumerate(summaries, 1):
-                history_text += f"Summary {i}:\n {summary}\n"
+                history_text += f"Summary {i}:{summary}\n"
             history_text += "\n"
         
         # 添加最近的對話記錄
@@ -161,18 +120,18 @@ class ConversationManager:
             recent_conversations = conversations[-recent_count:]
         
         for i, conv in enumerate(recent_conversations, 1):
-            history_text += f"[Turn {conv['turn_number']}]\n"
-            history_text += f"**User Question**\n{conv['user_intent']}\n"
+            history_text += f"[Previous Turn {conv['turn_number']}]\n"
+            history_text += f"User: {conv['user_intent']}\n"
             
             # 添加FHIR資料摘要
             if conv.get('fhir_data'):
-                history_text += f"**FHIR Data**\n{conv['fhir_data']}\n"
+                history_text += f"FHIR: {conv['fhir_data']}\n"
             
             # 限制回應長度以避免提示詞過長
             response_preview = conv['system_response'][:200]
             if len(conv['system_response']) > 200:
                 response_preview += "..."
-            history_text += f"**System Response**\n{response_preview}\n"
+            history_text += f"System: {response_preview}\n"
                 
         return history_text
 
