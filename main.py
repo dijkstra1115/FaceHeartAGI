@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from typing import Dict, Any, Optional, List, AsyncGenerator
 import uvicorn
 import os
+from dotenv import load_dotenv
 import json
 import logging
 from datetime import datetime
@@ -13,6 +14,8 @@ import asyncio
 from rag_client import RAGClient
 from conversation_manager import ConversationManager
 from data_parser import observation_parser
+
+load_dotenv()
 
 # 設定日誌
 logging.basicConfig(level=logging.INFO)
@@ -138,22 +141,16 @@ async def analyze_stream(request: MedicalAnalysisRequest):
             
             # 使用預設知識庫模板（如果沒有提供）
             knowledge_base = request.knowledge_base if request.knowledge_base else DEFAULT_KNOWLEDGE_BASE
-                        
-            # 根據檢索類型設定 RAG 客戶端
-            if request.retrieval_type == "llm":
-                rag_client.switch_to_llm_search()
-            else:
-                rag_client.switch_to_vector_search()
-            
-            # 獲取對話歷史
+
             conversation_history = conversation_manager.format_conversation_history_for_prompt(request.session_id)
-            
+                        
             # 直接使用 RAG 串流增強生成回應
             async for chunk in format_streaming_response(
                 rag_client.enhance_response_with_rag_stream(
                     request.user_question,
                     observation_parser(request.fhir_data),
                     knowledge_base,
+                    request.retrieval_type,
                     conversation_history
                 ),
                 "medical_analysis"
