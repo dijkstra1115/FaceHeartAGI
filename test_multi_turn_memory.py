@@ -36,8 +36,8 @@ def load_fhir_data_files():
         filename = f'./fhir/fhir_{i}.json'
         try:
             with open(filename, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                fhir_data_list.append(data)
+                json_str = f.read()
+                fhir_data_list.append(json_str)
                 logger.info(f"成功載入 {filename}")
         except FileNotFoundError:
             logger.warning(f"{filename} 檔案不存在")

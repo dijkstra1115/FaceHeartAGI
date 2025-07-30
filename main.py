@@ -62,9 +62,8 @@ class MedicalAnalysisRequest(BaseModel):
     session_id: str  # 會話ID，用於記錄對話歷史
     knowledge_base: Optional[Dict[str, Any]] = None  # 知識庫內容（若無提供則使用預設知識庫模板）
     user_question: str  # 用戶問題
-    fhir_data: str  # 個人 FHIR 資料
-    retrieval_type: str = "vector"  # LLM 或向量檢索 ("llm" 或 "vector")
-    additional_context: Optional[Dict[str, Any]] = None
+    fhir_data: Optional[str]  # 個人 FHIR 資料
+    retrieval_type: Optional[str] = "vector"  # LLM 或向量檢索 ("llm" 或 "vector")
 
 class ConversationHistoryRequest(BaseModel):
     """對話歷史請求模型"""
@@ -142,13 +141,15 @@ async def analyze_stream(request: MedicalAnalysisRequest):
             # 使用預設知識庫模板（如果沒有提供）
             knowledge_base = request.knowledge_base if request.knowledge_base else DEFAULT_KNOWLEDGE_BASE
 
+            fhir = parser_fhir(json.loads(request.fhir_data)) if request.fhir_data else ""
+
             conversation_history = conversation_manager.format_conversation_history_for_prompt(request.session_id)
                         
             # 直接使用 RAG 串流增強生成回應
             async for chunk in format_streaming_response(
                 rag_client.enhance_response_with_rag_stream(
                     request.user_question,
-                    parser_fhir(json.loads(request.fhir_data)),
+                    fhir,
                     knowledge_base,
                     request.retrieval_type,
                     conversation_history
@@ -178,7 +179,7 @@ async def analyze_stream(request: MedicalAnalysisRequest):
                     request.session_id,
                     request.user_question,
                     full_response,
-                    parser_fhir(json.loads(request.fhir_data))
+                    fhir
                 )
                 
                 logger.info(f"已記錄會話 {request.session_id} 的對話輪次")

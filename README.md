@@ -104,8 +104,7 @@ POST /analyze-stream
   "knowledge_base": {},        // 可選，知識庫內容
   "user_question": "string",   // 用戶問題
   "fhir_data": {},            // FHIR 醫療資料
-  "retrieval_type": "vector", // "vector" 或 "llm"
-  "additional_context": {}    // 可選，額外上下文
+  "retrieval_type": "vector" // "vector" 或 "llm"
 }
 ```
 

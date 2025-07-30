@@ -195,11 +195,11 @@ def parser_fhir(bundle: Dict[str, Any]) -> str:
 
         for comp in res['component']:
             coding = comp.get('code', {}).get('coding', [{}])[0]
-            name = coding.get('display', coding.get('code', 'Unknown'))
+            label = coding.get('display', coding.get('code', 'Unknown'))
             qty = comp.get('valueQuantity', {})
             val = qty.get('value', 'N/A')
             unit = qty.get('unit', '')
-            lines.append(f"- {name}: {val} {unit}")
+            lines.append(f"- {label}: {val} {unit}")
 
         outputs.append("\n".join([header] + lines))
 

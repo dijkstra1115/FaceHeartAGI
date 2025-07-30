@@ -1,123 +1,124 @@
 {
-    "resourceType": "Observation",
-    "id": "vitals_005",
-    "status": "final",
-    "code": {
-      "coding": [
-        {
-          "system": "http://loinc.org",
-          "code": "8716-3",
-          "display": "Vital signs panel"
-        }
-      ],
-      "text": "Vital signs panel"
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:dea860f6-bcbf-1c79-7210-1609d31980f5",
+      "resource": {
+        "id": "P00123",
+        "identifier": [
+          {
+            "system": "https://your-dialysis-center.tw/observations",
+            "value": "P00123"
+          }
+        ],
+        "resourceType": "Patient"
+      }
     },
-    "subject": {
-      "reference": "Patient/P00123"
-    },
-    "effectiveDateTime": "2025-06-05T16:10:00+08:00",
-    "component": [
-      {
-        "code": {
-          "coding": [
-            {
-              "system": "http://loinc.org",
-              "code": "39156-5",
-              "display": "Body mass index (BMI) [Ratio]"
+    {
+      "fullUrl": "urn:uuid:42797530-a045-0f6f-a92e-ee0390d006f9",
+      "resource": {
+        "component": [
+          {
+            "code": {
+              "coding": [
+                {
+                  "code": "39156-5",
+                  "display": "Body mass index (BMI) [Ratio]",
+                  "system": "http://loinc.org"
+                }
+              ]
+            },
+            "valueQuantity": {
+              "unit": "kg/m2",
+              "value": 24.8
             }
-          ]
-        },
-        "valueQuantity": {
-          "value": 24.8,
-          "unit": "kg/m2",
-          "system": "http://unitsofmeasure.org",
-          "code": "kg/m2"
-        }
-      },
-      {
-        "code": {
-          "coding": [
-            {
-              "system": "http://loinc.org",
-              "code": "8867-4",
-              "display": "Heart rate"
+          },
+          {
+            "code": {
+              "coding": [
+                {
+                  "code": "8867-4",
+                  "display": "Heart rate",
+                  "system": "http://loinc.org"
+                }
+              ]
+            },
+            "valueQuantity": {
+              "unit": "bpm",
+              "value": 83
             }
-          ]
-        },
-        "valueQuantity": {
-          "value": 83,
-          "unit": "bpm",
-          "system": "http://unitsofmeasure.org",
-          "code": "/min"
-        }
-      },
-      {
-        "code": {
-          "coding": [
-            {
-              "system": "http://loinc.org",
-              "code": "9279-1",
-              "display": "Respiratory rate"
+          },
+          {
+            "code": {
+              "coding": [
+                {
+                  "code": "9279-1",
+                  "display": "Respiratory rate",
+                  "system": "http://loinc.org"
+                }
+              ]
+            },
+            "valueQuantity": {
+              "unit": "breaths/min",
+              "value": 20
             }
-          ]
-        },
-        "valueQuantity": {
-          "value": 20,
-          "unit": "breaths/min",
-          "system": "http://unitsofmeasure.org",
-          "code": "/min"
-        }
-      },
-      {
-        "code": {
-          "coding": [
-            {
-              "system": "http://loinc.org",
-              "code": "59408-5",
-              "display": "Oxygen saturation in Arterial blood"
+          },
+          {
+            "code": {
+              "coding": [
+                {
+                  "code": "59408-5",
+                  "display": "Oxygen saturation in Arterial blood",
+                  "system": "http://loinc.org"
+                }
+              ]
+            },
+            "valueQuantity": {
+              "unit": "%",
+              "value": 95
             }
-          ]
-        },
-        "valueQuantity": {
-          "value": 95,
-          "unit": "%",
-          "system": "http://unitsofmeasure.org",
-          "code": "%"
-        }
-      },
-      {
-        "code": {
-          "coding": [
-            {
-              "system": "http://loinc.org",
-              "code": "8480-6",
-              "display": "Systolic blood pressure"
+          },
+          {
+            "code": {
+              "coding": [
+                {
+                  "code": "8480-6",
+                  "display": "Systolic blood pressure",
+                  "system": "http://loinc.org"
+                }
+              ]
+            },
+            "valueQuantity": {
+              "unit": "mmHg",
+              "value": 132
             }
-          ]
-        },
-        "valueQuantity": {
-          "value": 132,
-          "unit": "mmHg",
-          "system": "http://unitsofmeasure.org",
-          "code": "mm[Hg]"
-        }
-      },
-      {
-        "code": {
-          "coding": [
-            {
-              "system": "http://loinc.org",
-              "code": "8462-4",
-              "display": "Diastolic blood pressure"
+          },
+          {
+            "code": {
+              "coding": [
+                {
+                  "code": "8462-4",
+                  "display": "Diastolic blood pressure",
+                  "system": "http://loinc.org"
+                }
+              ]
+            },
+            "valueQuantity": {
+              "unit": "mmHg",
+              "value": 88
             }
-          ]
-        },
-        "valueQuantity": {
-          "value": 88,
-          "unit": "mmHg",
-          "system": "http://unitsofmeasure.org",
-          "code": "mm[Hg]"
+          }
+        ],
+        "effectiveDateTime": "2025-06-05T16:10:00+08:00",
+        "id": "vitals_005",
+        "resourceType": "Observation",
+        "status": "final",
+        "subject": {
+          "reference": "Patient/P00123"
         }
       }
-    ]
-  } 
+    }
+  ],
+  "id": "bundle-e47712c3-098c-18bf-596d-dc4a9f7f6b7e",
+  "resourceType": "Bundle",
+  "type": "collection"
+} 

@@ -8,8 +8,8 @@ from prompt_builder import PromptBuilder
 logger = logging.getLogger(__name__)
 
 # TODO:
-# 1. add_conversation_turn 的 system_response 可以只記錄 </think> 後的輸出
-# 2. format_conversation_history_for_prompt 的 system_response 可以只記錄 </think> 後的輸出
+# 1. ✅ add_conversation_turn 的 system_response 只記錄 </think> 後的輸出
+# 2. ✅ format_conversation_history_for_prompt 的 system_response 只記錄 </think> 後的輸出
 # 3. 增加資料庫來記錄對話
 
 class ConversationManager:
@@ -25,6 +25,24 @@ class ConversationManager:
         # 最大保存的對話輪數
         self.max_conversations = 10
 
+    def _extract_post_think_content(self, system_response: str) -> str:
+        """
+        從 system_response 中提取 </think> 後的內容
+        
+        Args:
+            system_response: 完整的系統回應
+            
+        Returns:
+            </think> 後的內容，如果沒有 </think> 標籤則返回原始內容
+        """
+        if "</think>" in system_response:
+            # 找到 </think> 的位置並提取後面的內容
+            think_end_index = system_response.find("</think>")
+            post_think_content = system_response[think_end_index + 8:].strip()  # 8 是 "</think>" 的長度
+            return post_think_content
+        else:
+            # 如果沒有 </think> 標籤，返回原始內容
+            return system_response
 
     def add_conversation_turn(self, session_id: str, user_question: str, 
                             system_response: str, fhir_data: str) -> None:
@@ -41,12 +59,15 @@ class ConversationManager:
             self.conversations[session_id] = []
             self.conversation_summaries[session_id] = []
         
+        # 只記錄 </think> 後的內容
+        post_think_response = self._extract_post_think_content(system_response)
+        
         # 記錄對話輪次
         conversation_turn = {
             "turn_number": len(self.conversations[session_id]) + 1,
             "timestamp": datetime.now().isoformat(),
             "user_intent": user_question,
-            "system_response": system_response,
+            "system_response": post_think_response,  # 只記錄 </think> 後的內容
             "fhir_data": fhir_data
         }
         
@@ -127,11 +148,8 @@ class ConversationManager:
             if conv.get('fhir_data'):
                 history_text += f"FHIR: {conv['fhir_data']}\n"
             
-            # 限制回應長度以避免提示詞過長
-            response_preview = conv['system_response'][:200]
-            if len(conv['system_response']) > 200:
-                response_preview += "..."
-            history_text += f"System: {response_preview}\n"
+            # 限制回應長度以避免提示詞過長（這裡的 system_response 已經是 </think> 後的內容）
+            history_text += f"System: {conv['system_response']}\n"
                 
         return history_text
 
