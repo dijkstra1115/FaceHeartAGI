@@ -2,7 +2,7 @@ import json
 import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime
-from llm_client import LLMClient
+from src.llm_client import LLMClient
 from src.utils.prompt_builder import PromptBuilder
 
 logger = logging.getLogger(__name__)

@@ -3,9 +3,9 @@ import asyncio
 from typing import Dict, Any, Optional, AsyncGenerator
 from dotenv import load_dotenv
 import os
-from llm_client import LLMClient
+from src.llm_client import LLMClient
 from src.utils.prompt_builder import PromptBuilder
-from retrieval_strategies import VectorRetrievalStrategy, LLMRetrievalStrategy, RetrievalStrategy
+from src.retrieval_strategies import VectorRetrievalStrategy, LLMRetrievalStrategy, RetrievalStrategy
 
 # 載入環境變數
 load_dotenv()

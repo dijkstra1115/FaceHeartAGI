@@ -1,13 +1,10 @@
-import os
-import json
-import pickle
 import numpy as np
 import faiss
 from typing import Dict, Any, List, Optional, Tuple
 from sentence_transformers import SentenceTransformer
 import logging
 from dotenv import load_dotenv
-from data_parser import extract_medical_documents
+from src.utils.data_parser import extract_medical_documents
 
 # 載入環境變數
 load_dotenv()
