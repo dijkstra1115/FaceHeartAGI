@@ -4,8 +4,8 @@ from typing import Dict, Any
 import aiohttp
 import os
 from vector_store import MedicalVectorStore
-from prompt_builder import PromptBuilder
-from data_parser import extract_medical_documents
+from src.utils.prompt_builder import PromptBuilder
+from src.utils.data_parser import extract_medical_documents
 from dotenv import load_dotenv
 from llm_client import LLMClient
 

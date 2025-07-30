@@ -11,9 +11,9 @@ import logging
 from datetime import datetime
 import asyncio
 
-from rag_client import RAGClient
-from conversation_manager import ConversationManager
-from data_parser import parser_fhir
+from src.rag_client import RAGClient
+from src.conversation_manager import ConversationManager
+from src.utils.data_parser import parser_fhir
 
 load_dotenv()
 

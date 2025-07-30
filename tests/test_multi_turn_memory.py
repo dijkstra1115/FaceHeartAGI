@@ -24,7 +24,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # API 基礎 URL
-API_PORT = os.getenv("FACEHEART_API_PORT")
+API_PORT = os.getenv("FACEHEART_API_PORT", 8500)
 API_URL = os.getenv("FACEHEART_API_URL")
 BASE_URL = f"{API_URL}:{API_PORT}"
 

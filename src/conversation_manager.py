@@ -3,7 +3,7 @@ import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from llm_client import LLMClient
-from prompt_builder import PromptBuilder
+from src.utils.prompt_builder import PromptBuilder
 
 logger = logging.getLogger(__name__)
 
