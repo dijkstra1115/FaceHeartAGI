@@ -133,26 +133,26 @@ If no relevant content is found, please return "No relevant content retrieved."
 Please answer the question based on the above information. If there is conversation history, please ensure response coherence."""
 
     @staticmethod
-    def build_summary_prompt(conversations: List[Dict[str, Any]]) -> str:
+    def build_summary_prompt(conversations: list) -> str:
         """
         Build summary generation prompt
-        
+
         Args:
-            conversations: List of conversation records
-            
+            conversations: List of ConversationTurn ORM objects
         Returns:
             Summary prompt
         """
         conversation_text = ""
         for i, conv in enumerate(conversations, 1):
-            
             conversation_text += f"""
-[Turn {conv['turn_number']}]\n
-**User Intent**\n{conv['user_intent']}\n
-**FHIR Data**\n{conv['fhir_data']}\n
-**System Response**\n{conv['system_response'][:200]}{'...' if len(conv['system_response']) > 200 else ''}
+[Turn {conv.turn_number}]
+**User Intent**
+{conv.user_intent}
+**FHIR Data**
+{conv.fhir_data}
+**System Response**
+{conv.system_response}
 """
-        
         prompt = f"""
 ### Conversation Records ###
 {conversation_text}

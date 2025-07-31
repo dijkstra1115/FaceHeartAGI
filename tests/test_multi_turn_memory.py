@@ -65,13 +65,13 @@ def load_custom_knowledge_base():
 FHIR_DATA_LIST = load_fhir_data_files()
 CUSTOM_KNOWLEDGE_BASE = load_custom_knowledge_base()
 
-async def send_question(session: aiohttp.ClientSession, session_id: str, question: str, turn_number: int, fhir_data: Dict[str, Any]):
+async def send_question(session: aiohttp.ClientSession, device_id: str, question: str, turn_number: int, fhir_data: Dict[str, Any]):
     """發送問題並獲取回應"""
     print(f"\n--- Turn {turn_number} ---")
     print(f"❓ User Question: {question}")
     
     payload = {
-        "session_id": session_id,
+        "device_id": device_id,
         "knowledge_base": CUSTOM_KNOWLEDGE_BASE,
         "fhir_data": fhir_data,
         "user_question": question,
@@ -119,23 +119,23 @@ async def test_sequential_conversation():
     print("🧠 測試連續對話的記憶效果")
     print("=" * 60)
     
-    session_id = "memory_test_session"
+    device_id = "20250731"
     
     # 設計一系列相關的問題，測試LLM的記憶能力
     questions = [
         "What are the symptoms of hypertension?",
         "What are the potential risks based on my FHIR data?",
         "What are the changes in my FHIR history?"
-        # "What are the recommendations for my health?",
-        # "What kind of food should I eat?",
-        # "What kind of ingredients should I avoid?",
-        # "What are the changes in my FHIR history?",
-        # "What I just said?"
+        "What are the recommendations for my health?",
+        "What kind of food should I eat?",
+        "What kind of ingredients should I avoid?",
+        "What are the changes in my FHIR history?",
+        "What I just said?"
     ]
     
     async with aiohttp.ClientSession() as session:
         print(f"開始進行 {len(questions)} 輪連續對話")
-        print(f"會話ID: {session_id}")
+        print(f"識別 ID: {device_id}")
         print("=" * 60)
         
         responses = []
@@ -145,7 +145,7 @@ async def test_sequential_conversation():
             fhir_data_index = (i - 1) % len(FHIR_DATA_LIST)
             fhir_data = FHIR_DATA_LIST[fhir_data_index]
             
-            response = await send_question(session, session_id, question, i, fhir_data)
+            response = await send_question(session, device_id, question, i, fhir_data)
             if response:
                 responses.append(response)
             
