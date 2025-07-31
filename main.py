@@ -11,11 +11,14 @@ import logging
 from datetime import datetime
 import asyncio
 
+from src.utils.db import init_db
 from src.rag_client import RAGClient
 from src.conversation_manager import ConversationManager
 from src.utils.data_parser import parser_fhir
 
 load_dotenv()
+
+init_db()
 
 # 設定日誌
 logging.basicConfig(level=logging.INFO)
@@ -59,7 +62,7 @@ DEFAULT_KNOWLEDGE_BASE = load_default_knowledge_base()
 # Pydantic 模型
 class MedicalAnalysisRequest(BaseModel):
     """醫療分析請求模型"""
-    session_id: str  # 會話ID，用於記錄對話歷史
+    device_id: str
     knowledge_base: Optional[Dict[str, Any]] = None  # 知識庫內容（若無提供則使用預設知識庫模板）
     user_question: str  # 用戶問題
     fhir_data: Optional[str]  # 個人 FHIR 資料
@@ -67,7 +70,7 @@ class MedicalAnalysisRequest(BaseModel):
 
 class ConversationHistoryRequest(BaseModel):
     """對話歷史請求模型"""
-    session_id: str  # 會話ID
+    device_id: str
 
 class APIResponse(BaseModel):
     success: bool
@@ -124,7 +127,7 @@ async def analyze_stream(request: MedicalAnalysisRequest):
     醫療資料分析端點，支援異步串流模式
     
     參數:
-    - session_id: 會話ID
+    - device_id: 識別 ID
     - knowledge_base: 知識庫內容（可選，若無提供則使用預設知識庫模板）
     - user_question: 用戶問題
     - fhir_data: 個人 FHIR 資料
@@ -135,7 +138,7 @@ async def analyze_stream(request: MedicalAnalysisRequest):
     async def generate_streaming_analysis():
         full_response = ""  # 用於收集完整回應
         try:
-            logger.info(f"收到醫療分析請求，會話ID: {request.session_id}, 問題: {request.user_question}")
+            logger.info(f"收到醫療分析請求，會話ID: {request.device_id}, 問題: {request.user_question}")
             logger.info(f"檢索類型: {request.retrieval_type}")
             
             # 使用預設知識庫模板（如果沒有提供）
@@ -143,7 +146,7 @@ async def analyze_stream(request: MedicalAnalysisRequest):
 
             fhir = parser_fhir(json.loads(request.fhir_data)) if request.fhir_data else ""
 
-            conversation_history = conversation_manager.format_conversation_history_for_prompt(request.session_id)
+            conversation_history = conversation_manager.format_conversation_history_for_prompt(request.device_id)
                         
             # 直接使用 RAG 串流增強生成回應
             async for chunk in format_streaming_response(
@@ -175,14 +178,14 @@ async def analyze_stream(request: MedicalAnalysisRequest):
             # 記錄完整的對話輪次
             if full_response.strip():
                 
-                conversation_manager.add_conversation_turn(
-                    request.session_id,
+                await conversation_manager.add_conversation_turn(
+                    request.device_id,
                     request.user_question,
                     full_response,
                     fhir
                 )
                 
-                logger.info(f"已記錄會話 {request.session_id} 的對話輪次")
+                logger.info(f"已記錄會話 {request.device_id} 的對話輪次")
                     
         except Exception as e:
             logger.error(f"醫療分析過程中發生錯誤: {str(e)}")
@@ -206,17 +209,17 @@ async def clear_session(request: ConversationHistoryRequest):
     清除指定會話的所有記錄
     
     參數:
-    - session_id: 會話ID
+    - device_id: 識別 ID
     
     返回:
     - 清除確認
     """
     try:
-        conversation_manager.clear_session(request.session_id)
+        conversation_manager.clear_session(request.device_id)
         
         return APIResponse(
             success=True,
-            data={"session_id": request.session_id},
+            data={"device_id": request.device_id},
             message="會話記錄清除成功",
             timestamp=datetime.now().isoformat()
         )

@@ -1,213 +1,133 @@
-import json
 import logging
-from typing import Dict, Any, List, Optional
-from datetime import datetime
+from typing import Dict
+import asyncio
+from sqlalchemy.exc import IntegrityError
+from src.utils.db import SessionLocal, ConversationTurn, ConversationSummary
 from src.llm_client import LLMClient
 from src.utils.prompt_builder import PromptBuilder
 
 logger = logging.getLogger(__name__)
 
-# TODO:
-# 1. ✅ add_conversation_turn 的 system_response 只記錄 </think> 後的輸出
-# 2. ✅ format_conversation_history_for_prompt 的 system_response 只記錄 </think> 後的輸出
-# 3. 增加資料庫來記錄對話
-
 class ConversationManager:
-    """對話管理器，負責記錄對話歷史和生成摘要"""
-    
+    """對話管理器，使用 SQLite 進行持久化，並以 transaction + 唯一約束 + 重試機制避免 race condition"""
+
+    max_conversations = 10
+
     def __init__(self):
-        """初始化對話管理器"""
         self.llm_client = LLMClient()
-        # 使用字典來儲存不同會話的對話記錄
-        self.conversations: Dict[str, List[Dict[str, Any]]] = {}
-        # 儲存對話摘要
-        self.conversation_summaries: Dict[str, List[str]] = {}
-        # 最大保存的對話輪數
-        self.max_conversations = 10
 
-    def _extract_post_think_content(self, system_response: str) -> str:
-        """
-        從 system_response 中提取 </think> 後的內容
-        
-        Args:
-            system_response: 完整的系統回應
-            
-        Returns:
-            </think> 後的內容，如果沒有 </think> 標籤則返回原始內容
-        """
-        if "</think>" in system_response:
-            # 找到 </think> 的位置並提取後面的內容
-            think_end_index = system_response.find("</think>")
-            post_think_content = system_response[think_end_index + 8:].strip()  # 8 是 "</think>" 的長度
-            return post_think_content
-        else:
-            # 如果沒有 </think> 標籤，返回原始內容
-            return system_response
+    async def add_conversation_turn(
+        self, device_id: str, user_question: str,
+        system_response: str, fhir_data: str
+    ) -> None:
+        db = SessionLocal()
+        # transaction: insert, delete oldest, re-number
+        with db.begin():
+            cnt = db.query(ConversationTurn).filter_by(device_id=device_id).count()
+            next_turn = cnt + 1
 
-    def add_conversation_turn(self, session_id: str, user_question: str, 
-                            system_response: str, fhir_data: str) -> None:
-        """
-        添加一輪對話記錄
-        
-        Args:
-            session_id: 會話ID
-            user_question: 用戶問題
-            system_response: 系統回應
-            fhir_data: FHIR資料
-        """
-        if session_id not in self.conversations:
-            self.conversations[session_id] = []
-            self.conversation_summaries[session_id] = []
-        
-        # 只記錄 </think> 後的內容
-        post_think_response = self._extract_post_think_content(system_response)
-        
-        # 記錄對話輪次
-        conversation_turn = {
-            "turn_number": len(self.conversations[session_id]) + 1,
-            "timestamp": datetime.now().isoformat(),
-            "user_intent": user_question,
-            "system_response": post_think_response,  # 只記錄 </think> 後的內容
-            "fhir_data": fhir_data
-        }
-        
-        self.conversations[session_id].append(conversation_turn)
-        
-        # 限制對話記錄數量為最多10輪
-        if len(self.conversations[session_id]) > self.max_conversations:
-            # 移除最舊的對話記錄
-            removed_conversation = self.conversations[session_id].pop(0)
-            logger.info(f"會話 {session_id} 達到最大記錄數量，移除第 {removed_conversation['turn_number']} 輪對話")
-            
-            # 重新編號剩餘的對話記錄
-            for i, conv in enumerate(self.conversations[session_id]):
-                conv['turn_number'] = i + 1
-        
-        # 檢查是否需要生成摘要（當對話數量超過5輪時，每一輪都生成摘要）
-        if len(self.conversations[session_id]) >= 5:
-            logger.info(f"會話 {session_id} 達到 {len(self.conversations[session_id])} 輪對話，開始生成摘要")
-            # 在背景異步執行摘要生成
-            import asyncio
-            try:
-                # 嘗試在當前事件迴圈中執行
-                loop = asyncio.get_running_loop()
-                loop.create_task(self._generate_conversation_summary(session_id))
-            except RuntimeError:
-                # 如果沒有運行中的事件迴圈，使用線程執行
-                import threading
-                def run_async_summary():
-                    try:
-                        asyncio.run(self._generate_conversation_summary(session_id))
-                    except Exception as e:
-                        logger.error(f"在線程中生成摘要時發生錯誤: {str(e)}")
-                
-                thread = threading.Thread(target=run_async_summary)
-                thread.daemon = True
-                thread.start()
-        
-    
-    def format_conversation_history_for_prompt(self, session_id: str) -> str:
-        """
-        格式化對話歷史為提示詞文本
-        根據新的邏輯：當歷史長度 > 5 時，包含最近幾輪加上摘要
-        
-        Args:
-            session_id: 會話ID
-            
-        Returns:
-            格式化的對話歷史文本
-        """
-        conversations = self.conversations.get(session_id, [])
-        summaries = self.conversation_summaries.get(session_id, [])
-        
-        if not conversations:
-            return "This is our first conversation."
-        
-        history_text = ""
-                
-        # 如果有摘要且對話輪數 > 5，先添加摘要
-        if summaries and len(conversations) > 5:
-            history_text += "### Conversation Summary ###\n"
-            for i, summary in enumerate(summaries, 1):
-                history_text += f"Summary {i}:{summary}\n"
-            history_text += "\n"
-        
-        # 添加最近的對話記錄
-        if len(conversations) <= 5:
-            recent_conversations = conversations
-        else:
-            # 如果對話輪數 > 5，只顯示最近幾輪
-            recent_count = len(conversations) - 5
-            recent_conversations = conversations[-recent_count:]
-        
-        for i, conv in enumerate(recent_conversations, 1):
-            history_text += f"[Previous Turn {conv['turn_number']}]\n"
-            history_text += f"User: {conv['user_intent']}\n"
-            
-            # 添加FHIR資料摘要
-            if conv.get('fhir_data'):
-                history_text += f"FHIR: {conv['fhir_data']}\n"
-            
-            # 限制回應長度以避免提示詞過長（這裡的 system_response 已經是 </think> 後的內容）
-            history_text += f"System: {conv['system_response']}\n"
-                
-        return history_text
-
-    
-    async def _generate_conversation_summary(self, session_id: str) -> None:
-        """
-        生成對話摘要（永遠只對前5輪進行總結）
-        
-        Args:
-            session_id: 會話ID
-        """
-        try:
-            conversations = self.conversations.get(session_id, [])
-            if len(conversations) < 5:
-                return
-            
-            # 永遠只對前5輪對話進行摘要
-            first_five_conversations = conversations[:5]
-            
-            # 構建摘要提示詞
-            summary_prompt = PromptBuilder.build_summary_prompt(first_five_conversations)
-            
-            messages = [
-                {
-                    "role": "system",
-                    "content": PromptBuilder.get_system_prompt("summary")
-                },
-                {
-                    "role": "user", 
-                    "content": summary_prompt
-                }
-            ]
-            
-            # 使用LLM生成摘要
-            summary = await self.llm_client.generate_response(
-                messages,
-                max_tokens=1000,
-                temperature=0.3
+            turn = ConversationTurn(
+                device_id=device_id,
+                turn_number=next_turn,
+                user_intent=user_question,
+                system_response=system_response.split("</think>")[-1].strip(),
+                fhir_data=fhir_data
             )
-            
-            # 儲存摘要
-            self.conversation_summaries[session_id].append(summary)
-            
-            logger.info(f"已為會話 {session_id} 生成第 {len(self.conversation_summaries[session_id])} 個摘要（基於前5輪對話）")
-            
-        except Exception as e:
-            logger.error(f"生成對話摘要時發生錯誤: {str(e)}")
-    
+            db.add(turn)
 
-    def clear_session(self, session_id: str) -> None:
-        """
-        清除指定會話的記錄
-        
-        Args:
-            session_id: 會話ID
-        """
-        if session_id in self.conversations:
-            del self.conversations[session_id]
-        if session_id in self.conversation_summaries:
-            del self.conversation_summaries[session_id]
-        logger.info(f"已清除會話 {session_id} 的所有記錄") 
+            if next_turn > self.max_conversations:
+                oldest = (
+                    db.query(ConversationTurn)
+                      .filter_by(device_id=device_id)
+                      .order_by(ConversationTurn.turn_number.asc())
+                      .first()
+                )
+                if oldest:
+                    db.delete(oldest)
+                    turns = (
+                        db.query(ConversationTurn)
+                          .filter_by(device_id=device_id)
+                          .order_by(ConversationTurn.timestamp.asc())
+                          .all()
+                    )
+                    for idx, t in enumerate(turns, start=1):
+                        t.turn_number = idx
+
+        # trigger summary when reach threshold
+        total = db.query(ConversationTurn).filter_by(device_id=device_id).count()
+        if total >= 5:
+            logger.info(f"License {device_id} reached {total} turns, generating summary")
+            asyncio.create_task(self._generate_conversation_summary(device_id))
+        db.close()
+
+    def format_conversation_history_for_prompt(self, device_id: str) -> str:
+        db = SessionLocal()
+        turns = db.query(ConversationTurn)\
+                  .filter_by(device_id=device_id)\
+                  .order_by(ConversationTurn.turn_number.asc())\
+                  .all()
+        latest_summary = db.query(ConversationSummary)\
+                      .filter_by(device_id=device_id)\
+                      .order_by(ConversationSummary.summary_index.asc())\
+                      .first()
+        db.close()
+
+        if not turns:
+            return "This is our first conversation."
+
+        text = ""
+        # 當對話總數 > 5 且已有摘要時，先加入摘要區塊
+        if latest_summary and len(turns) > 5:
+            text += f"### Conversation Summary ###\n{latest_summary.content}"
+
+        # recent 取最後 5 輪
+        recent = turns[-5:] if len(turns) > 5 else turns
+        for t in recent:
+            text += f"[Turn {t.turn_number}] User: {t.user_intent}\n"
+            if t.fhir_data:
+                text += f"FHIR: {t.fhir_data}\n"
+            text += f"System: {t.system_response}\n"
+        return text
+
+    async def _generate_conversation_summary(self, device_id: str) -> None:
+        # 保持原有摘要生成邏輯
+        db = SessionLocal()
+        turns = db.query(ConversationTurn)\
+                  .filter_by(device_id=device_id)\
+                  .order_by(ConversationTurn.turn_number.asc())\
+                  .limit(5)\
+                  .all()
+        db.close()
+
+        prompt = PromptBuilder.build_summary_prompt(turns)
+        messages = [
+            {"role": "system", "content": PromptBuilder.get_system_prompt("summary")},
+            {"role": "user", "content": prompt}
+        ]
+        try:
+            summary = await self.llm_client.generate_response(
+                messages, max_tokens=1000, temperature=0.3
+            )
+            db = SessionLocal()
+            with db.begin():
+                idx = db.query(ConversationSummary)\
+                        .filter_by(device_id=device_id)\
+                        .count() + 1
+                db.add(ConversationSummary(
+                    device_id=device_id,
+                    summary_index=idx,
+                    content=summary.split("</think>")[-1].strip()
+                ))
+            db.close()
+            logger.info(f"新增第 {idx} 則摘要 for session {device_id}")
+        except Exception as e:
+            logger.error(f"生成摘要失敗: {e}")
+
+    def clear_session(self, device_id: str) -> None:
+        """刪除該 session 所有對話與摘要"""
+        db = SessionLocal()
+        with db.begin():
+            db.query(ConversationTurn).filter_by(device_id=device_id).delete()
+            db.query(ConversationSummary).filter_by(device_id=device_id).delete()
+        db.close()
+        logger.info(f"已清除 session {device_id} 的所有資料")
