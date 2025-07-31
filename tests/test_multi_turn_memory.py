@@ -119,13 +119,13 @@ async def test_sequential_conversation():
     print("🧠 測試連續對話的記憶效果")
     print("=" * 60)
     
-    device_id = "20250731"
+    device_id = "124"
     
     # 設計一系列相關的問題，測試LLM的記憶能力
     questions = [
         "What are the symptoms of hypertension?",
         "What are the potential risks based on my FHIR data?",
-        "What are the changes in my FHIR history?"
+        "What are the changes in my FHIR history?",
         "What are the recommendations for my health?",
         "What kind of food should I eat?",
         "What kind of ingredients should I avoid?",

@@ -73,11 +73,10 @@ If no relevant content is found, please return "No relevant content retrieved."
             Enhancement prompt
         """
         # Add conversation history to prompt if available
-        history_section = ""
-        if conversation_history:
-            history_section = f"### Prior Conversation History ###\n{conversation_history}"
 
-        prompt = f"""{history_section}
+        prompt = f"""### Prior Conversation History ###
+{conversation_history}
+
 ### Current User Question ###
 {user_question}
 
