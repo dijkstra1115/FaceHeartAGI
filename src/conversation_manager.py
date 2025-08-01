@@ -68,7 +68,7 @@ class ConversationManager:
                   .all()
         latest_summary = db.query(ConversationSummary)\
                       .filter_by(device_id=device_id)\
-                      .order_by(ConversationSummary.summary_index.asc())\
+                      .order_by(ConversationSummary.summary_index.desc())\
                       .first()
         db.close()
 
