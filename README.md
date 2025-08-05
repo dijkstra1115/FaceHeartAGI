@@ -2,13 +2,9 @@
 
 ## 📝 ToDo List
 
-- [ ] update FHIR parser to support different FHIR format
-- [ ] need a "user-id" to support multi-users connection
-- [ ] need a "api-key" to identify users
-- [ ] need Nginx to support HTTPS
-- [ ] need a Domain name to support HTTPS
-- [ ] implement local database for conversation history
-- [ ] only store system response after </think>
+- [ ] need Nginx and Domain name to support HTTPS
+- [ ] need a License in DB to protect the API and verify the permissions
+- [ ] Fix the bug in the database where `turn_number` cannot be modified
 
 FHIR 醫療資料分析與 RAG 增強 LLM 互動 API，支援異步串流模式。
 
