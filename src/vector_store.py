@@ -3,6 +3,7 @@ import faiss
 from typing import Dict, Any, List, Optional, Tuple
 from sentence_transformers import SentenceTransformer
 import logging
+import os
 from dotenv import load_dotenv
 from src.utils.data_parser import extract_medical_documents
 
@@ -22,7 +23,7 @@ class VectorStore:
             model_name: 句子嵌入模型名稱
         """
         self.model_name = model_name
-        self.model_path = "/home/llm/embedding-models/paraphrase-multilingual-MiniLM-L12-v2"
+        self.model_path = os.getenv("EMBEDDING_MODEL_PATH")
         self.encoder = SentenceTransformer(self.model_path)
         self.index = None
         self.documents = []

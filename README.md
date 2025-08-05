@@ -77,6 +77,36 @@ python main.py
      ```
 - 使用 SentenceTransformer 時 CUDA error -> 下載支援 `cu128` 的最新 Torch
 
+### 3. 佈署與運行
+1. 佈署 vLLM (參考網址 https://zhuanlan.zhihu.com/p/1902008703462406116)
+```bash
+ #pip安装pyTorch
+ pip3 install --force-reinstall torch==2.7.1 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+ #编译安装flashinfer
+ git clone https://github.com/flashinfer-ai/flashinfer.git --recursive
+ cd flashinfer
+ python -m pip install -v .
+ #编译安装vllm：
+ cd ..
+ git clone https://github.com/vllm-project/vllm.git
+ cd vllm
+ python use_existing_torch.py 
+ pip install -r requirements/build.txt 
+ pip install -r requirements/common.txt
+ pip install -e . --no-build-isolation (編譯會耗費大量資源，若為 OOM Error 則要增加虛擬記憶體大小，降低 workers 數量)
+```
+2. 運行 vLLM Server (需預先下載 `deepseek-qwen7b` 到本地)
+```bash
+export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33
+```
+```bash
+-m vllm.entrypoints.openai.api_server   --model ~/llm-models/deepseek-qwen7b   --tokenizer ~/llm-models/deepseek-qwen7b   --served-model-name deepseek-qwen7b   --host 0.0.0.0   --port 8000
+```
+3. 運行 API (需要預先下載 `paraphrase-multilingual-MiniLM-L12-v2` 到本地)
+```bash
+python main.py
+```
+
 ## 📡 API 端點
 
 | 端點 | 方法 | 描述 |
