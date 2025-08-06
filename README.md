@@ -5,6 +5,8 @@
 - [ ] need Nginx and Domain name to support HTTPS
 - [ ] need a License in DB to protect the API and verify the permissions
 - [ ] Fix the bug in the database where `turn_number` cannot be modified
+- [ ] 2-layer filter for hallucination avoidance
+- [ ] Prompt enhancement for flexible responses
 
 FHIR 醫療資料分析與 RAG 增強 LLM 互動 API，支援異步串流模式。
 
