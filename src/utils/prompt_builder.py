@@ -87,10 +87,9 @@ If no relevant content is found, please return "No relevant content retrieved."
 {retrieved_context}
 
 ### Response Rules (Strictly Enforced) ###
-1. Only respond based on the ### Current FHIR Data ###, ### Prior Conversation History ###, and ### Retrieved Knowledge ###.
-2. DO NOT guess or hallucinate. If no relevant information is available, respond: "I cannot answer based on the available data."
-3. Always maintain coherence with [Previous Turns] in the ### Prior Conversation History ###.
-4. Use English only.
+1. DO NOT guess or hallucinate. If no relevant information is available, respond: "I cannot answer based on the available data."
+2. Always maintain coherence with [Previous Turns] in the ### Prior Conversation History ###.
+3. Use English only.
 
 ### Thinking Process ###
 1. Summarize the ### Current FHIR Data ### and all historical FHIR from ### Prior Conversation History ###.
