@@ -129,15 +129,49 @@ class MedicalVectorStore(VectorStore):
         """初始化醫療向量資料庫，使用適合醫療文本的嵌入模型"""
         super().__init__("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
     
-    def add_medical_documents(self, medical_data: Dict[str, Any]) -> None:
+    def add_medical_documents(self, medical_data: Dict[str, Any] = None) -> None:
         """
         添加醫療資料到向量資料庫
         
         Args:
-            medical_data: 醫療資料字典
+            medical_data: 醫療資料字典，如果為 None 則讀取 /knowledge 目錄下的所有 JSON 文件
         """
-        documents = extract_medical_documents(medical_data)
-        self.add_documents(documents)
+        import json
+        from pathlib import Path
+        
+        all_documents = []
+        
+        # 讀取 /knowledge 目錄下的所有 JSON 文件
+        knowledge_dir = Path("knowledge")
+        if not knowledge_dir.exists():
+            logger.warning("knowledge 目錄不存在")
+            return
+            
+        json_files = list(knowledge_dir.glob("*.json"))
+        if not json_files:
+            logger.warning("knowledge 目錄下沒有找到 JSON 文件")
+            return
+            
+        logger.info(f"找到 {len(json_files)} 個 JSON 文件，開始處理...")
+        
+        for json_file in json_files:
+            try:
+                with open(json_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                
+                documents = extract_medical_documents(data)
+                all_documents.extend(documents)
+                logger.info(f"成功處理 {json_file.name}，提取了 {len(documents)} 個文檔")
+                
+            except Exception as e:
+                logger.error(f"處理文件 {json_file.name} 時發生錯誤: {str(e)}")
+                continue
+        
+        if all_documents:
+            logger.info(f"總共提取了 {len(all_documents)} 個文檔，開始添加到向量資料庫")
+            self.add_documents(all_documents)
+        else:
+            logger.warning("沒有提取到任何文檔")
     
     def search_medical_context(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
         """
