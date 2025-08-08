@@ -32,8 +32,8 @@ class ConversationManager:
             max_turn = db.query(ConversationTurn.turn_number)\
                          .filter_by(device_id=device_id)\
                          .order_by(ConversationTurn.turn_number.desc())\
-                         .scalar()
-            next_turn = (max_turn + 1) if max_turn else 1
+                         .first()
+            next_turn = (max_turn[0] + 1) if max_turn else 1
 
             turn = ConversationTurn(
                 device_id=device_id,
