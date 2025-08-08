@@ -26,10 +26,14 @@ class ConversationManager:
         system_response: str, fhir_data: str
     ) -> None:
         db = SessionLocal()
-        # transaction: insert, delete oldest, re-number
+        # transaction: insert, delete oldest if needed
         with db.begin():
-            cnt = db.query(ConversationTurn).filter_by(device_id=device_id).count()
-            next_turn = cnt + 1
+            # 取得該 device_id 的最大 turn_number
+            max_turn = db.query(ConversationTurn.turn_number)\
+                         .filter_by(device_id=device_id)\
+                         .order_by(ConversationTurn.turn_number.desc())\
+                         .scalar()
+            next_turn = (max_turn + 1) if max_turn else 1
 
             turn = ConversationTurn(
                 device_id=device_id,
@@ -40,7 +44,10 @@ class ConversationManager:
             )
             db.add(turn)
 
-            if next_turn > self.max_conversations:
+            # 檢查是否超過最大對話數，如果超過則刪除最舊的記錄
+            total_turns = db.query(ConversationTurn).filter_by(device_id=device_id).count()
+            if total_turns > self.max_conversations:
+                # 刪除最舊的記錄（turn_number 最小的）
                 oldest = (
                     db.query(ConversationTurn)
                       .filter_by(device_id=device_id)
@@ -49,14 +56,6 @@ class ConversationManager:
                 )
                 if oldest:
                     db.delete(oldest)
-                    turns = (
-                        db.query(ConversationTurn)
-                          .filter_by(device_id=device_id)
-                          .order_by(ConversationTurn.timestamp.asc())
-                          .all()
-                    )
-                    for idx, t in enumerate(turns, start=1):
-                        t.turn_number = idx
 
         # trigger summary when reach threshold
         total = db.query(ConversationTurn).filter_by(device_id=device_id).count()
