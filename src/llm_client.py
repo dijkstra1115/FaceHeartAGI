@@ -21,7 +21,7 @@ class LLMClient:
         self.base_url = os.getenv("LLM_BASE_URL", "http://localhost:8000/v1/chat/completions")
         self.model = os.getenv("LLM_DEFAULT_MODEL", "deepseek-qwen7b")
 
-    async def generate_response_stream(self, messages: List[Dict[str, str]], max_tokens: int = 1000, temperature: float = 0.7) -> AsyncGenerator[str, None]:
+    async def generate_response_stream(self, messages: List[Dict[str, str]], max_tokens: int = None, temperature: float = 0.7) -> AsyncGenerator[str, None]:
         """
         生成 LLM 回應（異步串流模式）
         
@@ -33,6 +33,9 @@ class LLMClient:
         Yields:
             LLM 回應的文字片段
         """
+        if max_tokens is None:
+            max_tokens = int(os.getenv("LLM_DEFAULT_MAX_TOKENS", 1000))
+            
         try:
             payload = {
                 "model": self.model,
@@ -69,7 +72,7 @@ class LLMClient:
         except Exception as e:
             raise Exception(f"LLM 異步串流回應生成失敗: {str(e)}")
 
-    async def generate_response(self, messages: List[Dict[str, str]], max_tokens: int = 1000, temperature: float = 0.7) -> str:
+    async def generate_response(self, messages: List[Dict[str, str]], max_tokens: int = None, temperature: float = 0.7) -> str:
         """
         生成 LLM 回應（異步模式）
         
@@ -81,6 +84,9 @@ class LLMClient:
         Returns:
             LLM 回應的完整文字
         """
+        if max_tokens is None:
+            max_tokens = int(os.getenv("LLM_DEFAULT_MAX_TOKENS", 1000))
+            
         try:
             payload = {
                 "model": self.model,

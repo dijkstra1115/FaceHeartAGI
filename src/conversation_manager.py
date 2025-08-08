@@ -1,10 +1,15 @@
 import logging
+import os
 from typing import Dict
 import asyncio
 from sqlalchemy.exc import IntegrityError
+from dotenv import load_dotenv
 from src.utils.db import SessionLocal, ConversationTurn, ConversationSummary
 from src.llm_client import LLMClient
 from src.utils.prompt_builder import PromptBuilder
+
+# 載入環境變數
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +113,7 @@ class ConversationManager:
         ]
         try:
             summary = await self.llm_client.generate_response(
-                messages, max_tokens=1000, temperature=0.3
+                messages, max_tokens=int(os.getenv("LLM_DEFAULT_MAX_TOKENS", 1000)), temperature=0.3
             )
             db = SessionLocal()
             with db.begin():
