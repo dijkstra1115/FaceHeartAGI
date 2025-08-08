@@ -84,7 +84,6 @@ class ConversationManager:
         # 當對話總數 > 5 且已有摘要時，先加入摘要區塊
         if latest_summary and len(turns) > 5:
             text += f"[Conversation Summary]\n{latest_summary.content}\n"
-            print(f"testing: {latest_summary.content}")
 
         num_turns = len(turns) - 5
         recent = turns[-num_turns:] if len(turns) > 5 else turns

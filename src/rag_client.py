@@ -118,8 +118,6 @@ class RAGClient:
                 "content": enhancement_prompt
             }
         ]
-
-        # print(enhancement_prompt)
         
         logger.info("開始生成增強回應（streaming）...")
         async for chunk in self.llm_client.generate_response_stream(
