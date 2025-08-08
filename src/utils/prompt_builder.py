@@ -94,9 +94,7 @@ If no relevant content is found, please return "No relevant content retrieved."
 ### Thinking Process ###
 1. Summarize the ### Current FHIR Data ### and all historical FHIR from ### Prior Conversation History ###.
 2. Compare the ### Current FHIR Data ### data with historical FHIR to identify any trends or significant changes.
-3. Use relevant information from the ### Current FHIR Data ### and historical FHIR to answer ### Current User Question ###.
-4. Use relevant information from the ### Retrieved Knowledge ### to support or contextualize the answer if applicable.
-5. Use relevant information from the ### Prior Conversation History ### to ensure the response is coherent and contextually aligned.
+3. Use relevant information from the ### Retrieved Knowledge ### to support or contextualize the answer if applicable.
 
 ### Objective ###
 1. Follow the steps in ### Thinking Process ###, maintain professionalism and accuracy, and generate a concise and accurate response.
