@@ -8,6 +8,9 @@
 - [ ] transaction does not solve the race condition problem
 - [ ] 2-layer filter for hallucination avoidance
 - [ ] Prompt enhancement for flexible responses
+- [ ] shared VDB or personalized VDB
+- [ ] load different knowledge based on user question
+- [ ] GPU memory release
 
 FHIR 醫療資料分析與 RAG 增強 LLM 互動 API，支援異步串流模式。
 
