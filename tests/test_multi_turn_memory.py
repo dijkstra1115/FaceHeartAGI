@@ -124,16 +124,17 @@ async def test_sequential_conversation():
     # 設計一系列相關的問題，測試LLM的記憶能力
     questions = [
         "What are the symptoms of hypertension?",
-        # "What are the potential risks based on my FHIR data?",
-        # "What are the changes in my FHIR history?",
-        # "What are the recommendations for my health?",
-        # "What kind of food should I eat?",
-        # "What kind of ingredients should I avoid?",
-        # "What are the changes in my FHIR history?",
-        # "What I just ask you?",
-        # "Could you suggest me how to excercise to avoid hypertension?",
-        # "What's my BP changes within a month?",
-        "Do I have any underlying diseases?"
+        "What are the potential risks based on my FHIR data?",
+        "What are the changes in my FHIR history?",
+        "What are the recommendations for my health?",
+        "What kind of food should I eat?",
+        "What kind of ingredients should I avoid?",
+        "What are the changes in my FHIR history?",
+        "What I just ask you?",
+        "Could you suggest me how to excercise to avoid hypertension?",
+        "What's my BP changes within a month?",
+        "Do I have any underlying diseases?",
+        "What are the symptoms of diabites?"
     ]
     
     async with aiohttp.ClientSession() as session:

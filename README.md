@@ -5,6 +5,7 @@
 - [ ] need Nginx and Domain name to support HTTPS
 - [ ] need a License in DB to protect the API and verify the permissions
 - [ ] Fix the bug in the database where `turn_number` cannot be modified
+- [ ] transaction does not solve the race condition problem
 - [ ] 2-layer filter for hallucination avoidance
 - [ ] Prompt enhancement for flexible responses
 
