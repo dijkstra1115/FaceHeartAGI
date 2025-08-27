@@ -2,6 +2,14 @@
 
 ## 📝 ToDo List
 
+- [ ] need gunicorn to support multiple workers
+- [ ] survey text-to-speech library
+- [ ] context engineering
+  1. Hybrid Retrieval: Parallel Excution and Re-ranking
+  2. Contextual Chunking and Embedding: Pre-process the knowledge base
+  3. Dynamic Prompt Construction
+  4. Conversation History Management
+  5. Leveraging FHIR Structure
 - [ ] need Nginx and Domain name to support HTTPS
 - [ ] need a License in DB to protect the API and verify the permissions
 - [ ] Fix the bug in the database where `turn_number` cannot be modified (SQLAlchemy flush sends multiple UPDATEs in its own order)
