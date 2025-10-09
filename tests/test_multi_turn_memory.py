@@ -33,7 +33,7 @@ def load_fhir_data_files():
     fhir_data_list = []
     
     for i in range(1, 7):  # 載入 sample_fhir_data_1.json 到 sample_fhir_data_6.json
-        filename = f'./fhir/fhir_{i}.json'
+        filename = f'../fhir/fhir_{i}.json'
         try:
             with open(filename, 'r', encoding='utf-8') as f:
                 json_str = f.read()
@@ -52,7 +52,7 @@ def load_fhir_data_files():
 def load_custom_knowledge_base():
     """載入自定義知識庫"""
     try:
-        with open('./knowledge/hypertension_data.json', 'r', encoding='utf-8') as f:
+        with open('../knowledge/hypertension_data.json', 'r', encoding='utf-8') as f:
             return json.load(f)
     except FileNotFoundError:
         logger.warning("自定義知識庫檔案不存在")
@@ -119,10 +119,11 @@ async def test_sequential_conversation():
     print("🧠 測試連續對話的記憶效果")
     print("=" * 60)
     
-    device_id = "126"
+    device_id = "yuting0815"
     
     # 設計一系列相關的問題，測試LLM的記憶能力
     questions = [
+        "What are the symptoms of diabites?",
         "What are the symptoms of hypertension?",
         "What are the potential risks based on my FHIR data?",
         "What are the changes in my FHIR history?",
@@ -130,11 +131,10 @@ async def test_sequential_conversation():
         "What kind of food should I eat?",
         "What kind of ingredients should I avoid?",
         "What are the changes in my FHIR history?",
-        "What I just ask you?",
+        "What did I just ask you?",
         "Could you suggest me how to excercise to avoid hypertension?",
         "What's my BP changes within a month?",
-        "Do I have any underlying diseases?",
-        "What are the symptoms of diabites?"
+        "Do I have any underlying diseases?"
     ]
     
     async with aiohttp.ClientSession() as session:

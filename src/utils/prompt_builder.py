@@ -8,7 +8,24 @@ class PromptBuilder:
     # System prompts
     SYSTEM_PROMPTS = {
         "retrieval": "You are a professional medical data retrieval assistant. Your task is to find the most relevant information from the provided database content based on user questions. Please only return relevant content without adding additional explanations.",
-        "enhancement": "You are a professional medical AI assistant. Please analyze user questions step by step based on the provided FHIR data and retrieved relevant content to generate a concise and accurate response.",
+        "enhancement": """### SYSTEM ROLE ###
+You are a **senior clinical informatics analyst** specializing in FHIR (R4/R5) medical data.
+Your task is to answer the user's question using **only** the provided structured data and retrieved context.
+Operate with **strict evidence discipline**: every statement must trace to at least one explicit source in the inputs.
+
+---
+
+### HARD RULES (Strict Priority) ###
+1. Do **not** guess, infer, or hallucinate.
+2. Use only information present in these sections:
+   - <conversation_history>
+   - <user_question>
+   - <fhir_data>
+   - <retrieved_knowledge>
+3. Respond **in English only.**
+4. If the available data is insufficient or ambiguous, reply **exactly** with:
+   > I cannot answer based on the available data.
+5. Do not include reasoning steps or meta commentary in the output.""",
         "base": "You are a professional medical AI assistant specialized in analyzing FHIR format medical data. Please answer questions based on the provided medical data and provide accurate medical information.",
         "summary": "You are a professional conversation summary assistant. Please analyze conversation records step by step to generate concise summaries containing only user intent and system response conclusions."
     }
@@ -40,7 +57,7 @@ class PromptBuilder:
         """
         formatted_content = json.dumps(database_content, ensure_ascii=False, indent=2)
         
-        prompt = f"""
+        prompt = f"""\
 User Question: {user_question}
 
 Please find the most relevant information from the following database content:
@@ -74,82 +91,62 @@ If no relevant content is found, please return "No relevant content retrieved."
         """
         # Add conversation history to prompt if available
 
-        prompt = f"""### System / Role ###
-You are a senior clinical informatics analyst specializing in FHIR (R4/R5). Your task is to answer the user's question by analyzing structured FHIR data alongside the prior conversation and any retrieved knowledge provided below. Operate with strict evidence discipline: reference only items present in the provided contexts.
+        prompt = f"""\
+### INPUTS ###
+<conversation_history>
+{conversation_history or "None"}
+</conversation_history>
 
-### Inputs ###
-[Prior Conversation History]
-{conversation_history}
-
-[Current User Question]
+<user_question>
 {user_question}
+</user_question>
 
-[Current FHIR Data]
+<fhir_data>
 {fhir_data}
+</fhir_data>
 
-[Retrieved Knowledge]
+<retrieved_knowledge>
 {retrieved_context}
+</retrieved_knowledge>
 
-### Hard Rules (Strict) ###
-1) Do not guess or hallucinate. If no relevant information is available to answer the question, respond exactly: I cannot answer based on the available data.
-2) Base your answer solely on the four input blocks above. Do not invoke external knowledge or tools beyond what is provided here.
-3) Use English only.
+---
 
-### Thinking & Verification (perform silently; do not reveal step-by-step reasoning) ###
-A) If applicable, use pertinent information from [Retrieved Knowledge] to contextualize findings. Only use what is explicitly present there.
-B) Run a self-check before finalizing:
-   - Every response maps to at least one explicit datum in [Retrieved Knowledge] or [Current FHIR Data] or [Prior Conversation History].
-   - Do not make up any information.
+### OUTPUT REQUIREMENTS ###
+Use this JSON-like format for clarity and downstream parsing:
+Answer: <direct, concise answer based only on available evidence>
+Context: <1–2 sentences of supporting context, referencing data or retrieved content>
+- Keep the answer 3–7 sentences maximum.
+- Avoid medical advice, prescriptions, or unverified statements.
+- Use explicit dates, numeric values, and FHIR references when available.
 
-### Output Requirements ###
-Produce a concise answer (typically 3–7 sentences) using the following structure when there is sufficient information:
-1) Answer: Directly address the user’s question using only supported evidence.
-2) Context (if used): Add 1–2 sentences of context from [Retrieved Knowledge].
+---
 
-If there is insufficient relevant information to answer, output only: I cannot answer based on the available data.
+### EXAMPLES (Few-Shot Guidance) ###
+# Example 1 – Trend analysis
+Inputs: HbA1c 7.4% (2024-07-01) → 8.2% (2025-01-10)
+Question: "Is my diabetes control getting worse?"
+Output:
+Answer: Yes. The patient's glycemic control is worsening, as HbA1c increased from 7.4% to 8.2%.
+Context: This interpretation is supported by the ADA Standards of Care (target <7% for most adults).
 
-### Contrastive Guidance (what to do vs what to avoid) ###
-Positive example (acceptable):
-- Answer: This indicates worsening glycemic control relative to prior values.
-- Context: ADA guidance (as provided in Retrieved Knowledge) notes targets are individualized; many adults aim for <7% when safe.
+# Example 2 – Symptom extraction
+Inputs: "Hypertension symptom: Headache, Dizziness, Fatigue."
+Question: "What are the symptoms of hypertension?"
+Output:
+Answer: Headache, dizziness, and fatigue are common symptoms associated with hypertension.
+Context: These symptoms are explicitly listed in the provided retrieved knowledge.
 
-Negative example (avoid):
-- Claiming “LDL is high” when no lipid panel exists in the provided FHIR.
-- Inferring a diagnosis or treatment plan not present in the data.
-- Using vague timing (“recently”) instead of absolute dates.
-
-### Few-Shot Mini Cases ###
-Case 1 (contextualized answer)
-Inputs:
-- Prior Conversation History: HbA1c 7.4% (2024-07-01)
-- Current User Question: Is my diabetes control getting worse?
-- Current FHIR Data: HbA1c 8.2% (2025-01-10).
-- Retrieved Knowledge: ADA Standards of Care 2025 excerpt noting typical A1c target <7% for many adults.
-Expected Output (style):
-Answer: This pattern indicates worsening glycemic control compared with the prior measurement.
-Context: 
-1) Your current HbA1c 8.2% (2025-01-10) is higher than the prior HbA1c 7.4% (2024-07-01).
-2) Retrieved Knowledge: ADA Standards of Care (2025) excerpt provided suggests many adults target <7%, individualized by risk.
-
-Case 2 (contextualized answer)
-Inputs:
-- Current User Question: What are the symptoms of hypertension?
-- Retrieved Knowledge: Hypertension symptom: headache, Hypertension symptom: Dizziness, Hypertension symptom: Fatigue, Diabetes symptom: Blurred vision
-Expected Output (style):
-Answer: Headache, Dizziness, Fatigue.
-Context: 
-1) Retrieved Knowledge: Hypertension symptom: headache, Hypertension symptom: Dizziness, Hypertension symptom: Fatigue
-2) Your current user question is about the symptoms of hypertension.
-
-Case 3 (insufficient data)
-Inputs:
-- Current User Question: Do I have hypertension?
-- Current FHIR Data: No Condition resources for hypertension; two isolated blood pressure Observations missing diastolic component.
-Expected Output:
+# Example 3 – Insufficient data
+Inputs: Missing Condition resources for hypertension.
+Question: "Do I have hypertension?"
+Output:
 I cannot answer based on the available data.
 
-### Final Step ###
-Now analyze the inputs and produce your response following all rules above. Do not include your intermediate reasoning or the checklist; return only the final answer in the specified structure or the default insufficiency sentence when necessary.
+---
+
+### FINAL TASK ###
+Now analyze the inputs and produce your response following the required format and rules above.
+Return **only** the final answer block (no reasoning or commentary).
 """
         return prompt
     

@@ -64,7 +64,7 @@ class RAGClient:
             # 檢索相關內容
             retrieved_context = await self.retrieve_relevant_context(retrieval_strategy, user_question, database_content)
             
-            if not retrieved_context or retrieved_context.strip() == "沒有檢索到相關內容":
+            if not retrieved_context or retrieved_context.strip() == "No relevant content retrieved.":
                 logger.info("未找到相關的資料庫內容，將直接生成回應")
                 async for chunk in self._generate_base_response_stream(user_question, fhir_data, conversation_history):
                     yield chunk
