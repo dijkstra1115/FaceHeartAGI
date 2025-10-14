@@ -239,9 +239,9 @@ If insufficient data is available, reply exactly:
             conversation_text += f"""
 <conversation_turn>
 <turn_number>{t.turn_number}</turn_number>
-<user_intent>{t.user_intent.strip()}</user_intent>
-<fhir_data>{t.fhir_data.strip()}</fhir_data>
-<system_response>{t.system_response.strip()}</system_response>
+<user_intent>{(t.user_intent or "").strip()}</user_intent>
+<fhir_data>{(t.fhir_data or "").strip()}</fhir_data>
+<system_response>{(t.system_response or "").strip()}</system_response>
 </conversation_turn>
 """
 
