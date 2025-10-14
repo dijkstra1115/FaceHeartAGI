@@ -91,10 +91,9 @@ class ConversationManager:
         db.close()
 
         if not turns:
-            return "<conversation_history>\n<note>This is the first conversation.</note>\n</conversation_history>"
+            return "<note>This is the first conversation.</note>"
 
-        # Build XML-style conversation history
-        xml_history = "<conversation_history>\n"
+        xml_history = ""
 
         # If more than 5 turns and a summary exists → include summary + remaining turns
         if latest_summary and len(turns) > 5:
@@ -105,17 +104,14 @@ class ConversationManager:
             # Otherwise, include all turns (no summary yet)
             recent_turns = turns
 
-        # Build turn XML blocks
         for t in recent_turns:
             xml_history += "  <conversation_turn>\n"
             xml_history += f"    <turn_number>{t.turn_number}</turn_number>\n"
-            xml_history += f"    <user_intent>{t.user_intent.strip()}</user_intent>\n"
+            xml_history += f"    <user_intent>{(t.user_intent or '').strip()}</user_intent>\n"
             if t.fhir_data:
                 xml_history += f"    <fhir_data>{t.fhir_data.strip()}</fhir_data>\n"
-            xml_history += f"    <system_response>{t.system_response.strip()}</system_response>\n"
+            xml_history += f"    <system_response>{(t.system_response or '').strip()}</system_response>\n"
             xml_history += "  </conversation_turn>\n"
-
-        xml_history += "</conversation_history>"
 
         return xml_history
 
