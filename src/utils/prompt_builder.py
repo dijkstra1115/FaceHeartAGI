@@ -192,7 +192,6 @@ I cannot answer based on the available data.
 
 ### FINAL TASK ###
 Now analyze the inputs and produce your response following the required format and rules above.
-Return **only** the final answer block (no reasoning or commentary).
 """
         return prompt
 
