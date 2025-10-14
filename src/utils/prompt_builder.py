@@ -4,13 +4,33 @@ from typing import Dict, Any, List
 
 class PromptBuilder:
     """Prompt builder responsible for generating various types of prompts"""
-    
-    # System prompts
+
+    # =============================
+    # 🌐 SYSTEM PROMPTS (Unified Style)
+    # =============================
     SYSTEM_PROMPTS = {
-        "retrieval": "You are a professional medical data retrieval assistant. Your task is to find the most relevant information from the provided database content based on user questions. Please only return relevant content without adding additional explanations.",
+        "retrieval": """### SYSTEM ROLE ###
+You are a **medical data retrieval specialist**.
+Your task is to identify and extract **only** the content directly relevant to the user's query
+from the provided database information.
+
+### RULES ###
+1. Do not explain, summarize, or rephrase.
+2. Return only factual snippets or records verbatim from the database.
+3. If nothing relevant exists, reply exactly:
+   > No relevant content retrieved.
+4. Respond **in English only.**
+5. Format your output as a simple bullet list.
+
+### OUTPUT FORMAT EXAMPLE ###
+- Relevant Information 1
+- Relevant Information 2
+- ...
+""",
+
         "enhancement": """### SYSTEM ROLE ###
-You are a **senior clinical informatics analyst** specializing in FHIR (R4/R5) medical data.
-Your task is to answer the user's question using **only** the provided structured data and retrieved context.
+You are a **senior clinical informatics analyst** specializing in FHIR medical data.
+Your task is to answer the user's question using **only** the provided structured data and retrieved knowledge.
 Operate with **strict evidence discipline**: every statement must trace to at least one explicit source in the inputs.
 
 ---
@@ -19,87 +39,109 @@ Operate with **strict evidence discipline**: every statement must trace to at le
 1. Do **not** guess, infer, or hallucinate.
 2. Use only information present in these sections:
    - <conversation_history>
-   - <user_question>
    - <fhir_data>
    - <retrieved_knowledge>
+   - <user_question>
 3. Respond **in English only.**
 4. If the available data is insufficient or ambiguous, reply **exactly** with:
    > I cannot answer based on the available data.
-5. Do not include reasoning steps or meta commentary in the output.""",
-        "base": "You are a professional medical AI assistant specialized in analyzing FHIR format medical data. Please answer questions based on the provided medical data and provide accurate medical information.",
-        "summary": "You are a professional conversation summary assistant. Please analyze conversation records step by step to generate concise summaries containing only user intent and system response conclusions."
+5. Do not include reasoning steps or meta commentary in the output.
+
+---
+
+### EVIDENCE USE POLICY ###
+- When <retrieved_knowledge> contains relevant items, **you must incorporate them** into the answer.
+- Prefer **FHIR data** for patient-specific facts. Use **retrieved knowledge** for definitions, criteria, thresholds, or general medical guidance.
+
+
+""",
+
+        "base": """### SYSTEM ROLE ###
+You are a **medical AI assistant** specialized in analyzing structured FHIR data.
+Your goal is to answer user questions accurately and concisely using only the provided medical data.
+
+### RULES ###
+1. Use only the FHIR data and conversation context provided.
+2. If information is insufficient, respond:
+   > I cannot answer based on the available data.
+3. Respond **in English only.**
+4. Maintain a professional and factual tone — no speculation or advice.
+""",
+
+        "summary": """### SYSTEM ROLE ###
+You are a **clinical conversation summarization assistant**.
+Your task is to produce concise summaries capturing user intent, health trends, and system responses.
+
+### RULES ###
+1. Only use facts from the provided conversation records.
+2. Do not invent or infer information.
+3. Summaries must be concise, clear, and in **English**.
+4. Each summary section (Intent / Health / Response) must have ≤3 bullet points.
+"""
     }
-    
+
+    # =============================
+    # System prompt getter
+    # =============================
     @classmethod
     def get_system_prompt(cls, prompt_type: str) -> str:
-        """
-        Get system prompt of specified type
-        
-        Args:
-            prompt_type: Prompt type ("retrieval", "enhancement", "base", "summary")
-            
-        Returns:
-            System prompt
-        """
         return cls.SYSTEM_PROMPTS.get(prompt_type, "")
-    
+
+    # =============================
+    # Retrieval Prompt
+    # =============================
     @staticmethod
     def build_retrieval_prompt(user_question: str, database_content: Dict[str, Any]) -> str:
-        """
-        Build retrieval prompt
-        
-        Args:
-            user_question: User question
-            database_content: Database content
-            
-        Returns:
-            Retrieval prompt
-        """
         formatted_content = json.dumps(database_content, ensure_ascii=False, indent=2)
-        
+
         prompt = f"""\
-User Question: {user_question}
+### INPUTS ###
+<user_question>
+{user_question}
+</user_question>
 
-Please find the most relevant information from the following database content:
-
-Database Content:
+<database_content>
 {formatted_content}
+</database_content>
 
-Please only return content directly related to the user question in the following format:
+---
+
+### TASK ###
+Identify and extract all database entries that are **directly relevant** to the user question above.
+
+### OUTPUT FORMAT ###
 - Relevant Information 1
 - Relevant Information 2
 - ...
 
-If no relevant content is found, please return "No relevant content retrieved."
+If no relevant entries are found, reply exactly:
+> No relevant content retrieved.
+
+---
+
+### EXAMPLE ###
+Question: What are the symptoms of hypertension?
+Database Content (excerpt): 
+- Hypertension symptom: Headache
+- Hypertension symptom: Dizziness
+- Diabetes symptom: Blurred vision
+Expected Output:
+- Hypertension symptom: Headache
+- Hypertension symptom: Dizziness
 """
         return prompt
-    
-    @staticmethod
-    def build_enhancement_prompt(user_question: str, fhir_data: str, 
-                                retrieved_context: str, conversation_history: str = "") -> str:
-        """
-        Build enhancement prompt
-        
-        Args:
-            user_question: User question
-            fhir_data: FHIR data
-            retrieved_context: Retrieved relevant content
-            conversation_history: Conversation history (optional)
-            
-        Returns:
-            Enhancement prompt
-        """
-        # Add conversation history to prompt if available
 
+    # =============================
+    # Enhancement Prompt (kept as user-edited version)
+    # =============================
+    @staticmethod
+    def build_enhancement_prompt(user_question: str, fhir_data: str,
+                                retrieved_context: str, conversation_history: str = "") -> str:
         prompt = f"""\
 ### INPUTS ###
 <conversation_history>
 {conversation_history or "None"}
 </conversation_history>
-
-<user_question>
-{user_question}
-</user_question>
 
 <fhir_data>
 {fhir_data}
@@ -108,6 +150,10 @@ If no relevant content is found, please return "No relevant content retrieved."
 <retrieved_knowledge>
 {retrieved_context}
 </retrieved_knowledge>
+
+<user_question>
+{user_question}
+</user_question>
 
 ---
 
@@ -149,74 +195,88 @@ Now analyze the inputs and produce your response following the required format a
 Return **only** the final answer block (no reasoning or commentary).
 """
         return prompt
-    
+
+    # =============================
+    # Base Prompt
+    # =============================
     @staticmethod
     def build_base_prompt(user_question: str, fhir_data: str, conversation_history: str = "") -> str:
-        """
-        Build base prompt (used when no retrieved content is available)
-        
-        Args:
-            user_question: User question
-            fhir_data: FHIR data
-            conversation_history: Conversation history (optional)
-            
-        Returns:
-            Base prompt
-        """
-        # Add conversation history to prompt if available
-        history_section = ""
-        if conversation_history:
-            history_section = f"""
-### Conversation History ###
-{conversation_history}
-"""
+        history_section = f"<conversation_history>\n{conversation_history}\n</conversation_history>" if conversation_history else "<conversation_history />"
 
-        return f"""{history_section}\n\n### User Question ###\n{user_question}\n\n### FHIR Data ###\n{fhir_data}
+        prompt = f"""\
+### INPUTS ###
+{history_section}
 
-### Objective ###
-Please answer the question based on the above information. If there is conversation history, please ensure response coherence."""
+<user_question>
+{user_question}
+</user_question>
 
-    @staticmethod
-    def build_summary_prompt(conversations: list) -> str:
-        """
-        Build summary generation prompt
+<fhir_data>
+{fhir_data}
+</fhir_data>
 
-        Args:
-            conversations: List of ConversationTurn ORM objects
-        Returns:
-            Summary prompt
-        """
-        conversation_text = ""
-        for i, conv in enumerate(conversations, 1):
-            conversation_text += f"""
-[Turn {conv.turn_number}]
-**User Intent**
-{conv.user_intent}
-**FHIR Data**
-{conv.fhir_data}
-**System Response**
-{conv.system_response}
-"""
-        prompt = f"""
-### Conversation Records ###
-{conversation_text}
+---
 
-### Output Format ###
-**User Intent Summary:**
-- [Concise description of the user's main intent and needs in these 5 turns of conversation]
+### TASK ###
+Answer the user's question using **only** the FHIR data and (if present) conversation history.
 
-**Health Status Changes:**
-- [Analysis of user's health status change trends based on FHIR data]
+### OUTPUT FORMAT ###
+Answer: <concise, factual statement>
+Context: <optional, 1–2 sentence explanation>
 
-**System Response Conclusions:**
-- [Concise description of the main recommendations and conclusions provided by the system]
-
-### Objective ###
-1. Please generate a summary based on ### Conversation Records ###.
-2. Ensure the summary complies with ### Output Format ### rules.
-3. Please keep the summary concise and clear, with no more than 3 points per section.
-4. Please respond in English.
+If insufficient data is available, reply exactly:
+> I cannot answer based on the available data.
 """
         return prompt
-    
- 
+
+    # =============================
+    # Summary Prompt
+    # =============================
+    @staticmethod
+    def build_summary_prompt(turns: list) -> str:
+        conversation_text = ""
+        for t in turns:
+            conversation_text += f"""
+<conversation_turn>
+<turn_number>{t.turn_number}</turn_number>
+<user_intent>{t.user_intent.strip()}</user_intent>
+<fhir_data>{t.fhir_data.strip()}</fhir_data>
+<system_response>{t.system_response.strip()}</system_response>
+</conversation_turn>
+"""
+
+        prompt = f"""\
+### INPUTS ###
+<conversation_records>
+{conversation_text}
+</conversation_records>
+
+---
+
+### TASK ###
+Summarize the multi-turn conversation focusing on:
+1. The user's main intent and needs.
+2. Health status changes (based on FHIR data).
+3. Key system responses or recommendations.
+
+---
+
+### OUTPUT FORMAT ###
+<UserIntentSummary>
+- ...
+</UserIntentSummary>
+
+<HealthStatusChanges>
+- ...
+</HealthStatusChanges>
+
+<SystemResponseConclusions>
+- ...
+</SystemResponseConclusions>
+
+Rules:
+- Each section ≤3 concise bullet points.
+- Respond **in English only**.
+- Do not add information not found in the input records.
+"""
+        return prompt

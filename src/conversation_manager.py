@@ -65,34 +65,59 @@ class ConversationManager:
         db.close()
 
     def format_conversation_history_for_prompt(self, device_id: str) -> str:
+        """
+        Format recent conversation history into structured XML format for prompt context.
+        Compatible with the new XML-based enhancement prompt style.
+
+        Args:
+            device_id: The user's device identifier.
+
+        Returns:
+            A formatted string block representing the conversation history.
+        """
         db = SessionLocal()
-        turns = db.query(ConversationTurn)\
-                  .filter_by(device_id=device_id)\
-                  .order_by(ConversationTurn.turn_number.asc())\
-                  .all()
-        latest_summary = db.query(ConversationSummary)\
-                      .filter_by(device_id=device_id)\
-                      .order_by(ConversationSummary.summary_index.desc())\
-                      .first()
+        turns = (
+            db.query(ConversationTurn)
+            .filter_by(device_id=device_id)
+            .order_by(ConversationTurn.turn_number.asc())
+            .all()
+        )
+        latest_summary = (
+            db.query(ConversationSummary)
+            .filter_by(device_id=device_id)
+            .order_by(ConversationSummary.summary_index.desc())
+            .first()
+        )
         db.close()
 
         if not turns:
-            return "This is our first conversation."
+            return "<conversation_history>\n<note>This is the first conversation.</note>\n</conversation_history>"
 
-        text = ""
-        # 當對話總數 > 5 且已有摘要時，先加入摘要區塊
+        # Build XML-style conversation history
+        xml_history = "<conversation_history>\n"
+
+        # If more than 5 turns and a summary exists → include summary + remaining turns
         if latest_summary and len(turns) > 5:
-            text += f"[Conversation Summary]\n{latest_summary.content}\n"
+            xml_history += f"  <conversation_summary>{latest_summary.content.strip()}</conversation_summary>\n"
+            # Skip the first 5 turns since they are already summarized
+            recent_turns = turns[5:]
+        else:
+            # Otherwise, include all turns (no summary yet)
+            recent_turns = turns
 
-        num_turns = len(turns) - 5
-        recent = turns[-num_turns:] if len(turns) > 5 else turns
-        for t in recent:
-            text += f"[Turn {t.turn_number}]\n"
-            text += f"User: {t.user_intent}\n"
+        # Build turn XML blocks
+        for t in recent_turns:
+            xml_history += "  <conversation_turn>\n"
+            xml_history += f"    <turn_number>{t.turn_number}</turn_number>\n"
+            xml_history += f"    <user_intent>{t.user_intent.strip()}</user_intent>\n"
             if t.fhir_data:
-                text += f"FHIR: {t.fhir_data}\n"
-            text += f"System: {t.system_response}\n"
-        return text
+                xml_history += f"    <fhir_data>{t.fhir_data.strip()}</fhir_data>\n"
+            xml_history += f"    <system_response>{t.system_response.strip()}</system_response>\n"
+            xml_history += "  </conversation_turn>\n"
+
+        xml_history += "</conversation_history>"
+
+        return xml_history
 
     async def _generate_conversation_summary(self, device_id: str) -> None:
         # 保持原有摘要生成邏輯
