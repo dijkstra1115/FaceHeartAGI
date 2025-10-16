@@ -182,12 +182,6 @@ Output:
 Answer: Headache, dizziness, and fatigue are common symptoms associated with hypertension.
 Context: These symptoms are explicitly listed in the provided retrieved knowledge.
 
-# Example 3 – Insufficient data
-Inputs: Missing Condition resources for hypertension.
-Question: "Do I have hypertension?"
-Output:
-I cannot answer based on the available data.
-
 ---
 
 ### FINAL TASK ###
