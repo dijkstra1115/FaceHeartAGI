@@ -63,7 +63,12 @@ cp env.example .env
 OPENROUTER_API_KEY=your_api_key_here
 ```
 
-### 4. 啟動服務
+### 4. 下載 TTS 模型
+```bash
+python3 -m piper.download_voices zh_CN-huayan-medium
+```
+
+### 5. 啟動服務
 ```bash
 python main.py
 ```

@@ -15,3 +15,6 @@ huggingface-hub==0.16.4
 transformers==4.30.2
 # SQL
 sqlmodel
+# TTS
+piper-tts
+onnxruntime-gpu
