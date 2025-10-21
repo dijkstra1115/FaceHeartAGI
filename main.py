@@ -52,7 +52,7 @@ rag_client = RAGClient()
 conversation_manager = ConversationManager()
 
 # 初始化 Piper 語音模型（只載入一次）
-PIPER_VOICE_PATH = "./zh_CN-huayan-medium.onnx"
+PIPER_VOICE_PATH = "./en_US-lessac-medium.onnx"
 voice = PiperVoice.load(PIPER_VOICE_PATH, use_cuda=True)  # 改 True 若要用 GPU
 
 # 可調參數（選用）
