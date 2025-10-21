@@ -72,6 +72,53 @@ def synthesize_audio_bytes(text: str) -> bytes:
         voice.synthesize_wav(text, wav_file, syn_config=piper_config)
     return buffer.getvalue()
 
+def split_text_for_tts(text: str, max_chunk_size: int = 500) -> List[str]:
+    """
+    將文字分割成適合 TTS 的片段
+    
+    Args:
+        text: 要分割的文字
+        max_chunk_size: 每個片段的最大字符數
+        
+    Returns:
+        分割後的文字片段列表
+    """
+    if len(text) <= max_chunk_size:
+        return [text]
+    
+    chunks = []
+    current_chunk = ""
+    
+    # 按句子分割
+    sentences = text.replace('。', '。\n').replace('！', '！\n').replace('？', '？\n').split('\n')
+    
+    for sentence in sentences:
+        sentence = sentence.strip()
+        if not sentence:
+            continue
+            
+        # 如果當前片段加上新句子不會超過限制
+        if len(current_chunk) + len(sentence) <= max_chunk_size:
+            current_chunk += sentence
+        else:
+            # 如果當前片段不為空，先保存
+            if current_chunk:
+                chunks.append(current_chunk)
+            # 如果單個句子就超過限制，強制分割
+            if len(sentence) > max_chunk_size:
+                # 按字符強制分割
+                for i in range(0, len(sentence), max_chunk_size):
+                    chunks.append(sentence[i:i + max_chunk_size])
+                current_chunk = ""
+            else:
+                current_chunk = sentence
+    
+    # 添加最後一個片段
+    if current_chunk:
+        chunks.append(current_chunk)
+    
+    return chunks
+
 def load_default_knowledge_base():
     """載入預設知識庫"""
     try:
@@ -190,23 +237,60 @@ async def analyze_stream(request: MedicalAnalysisRequest):
                 # 立即傳出文字事件
                 yield f"event: text\ndata: {json.dumps({'content': chunk}, ensure_ascii=False)}\n\n"
 
-            # 第二階段：文字完成後，一次性轉成語音
+            # 第二階段：文字完成後，只將 </think> 後的文字轉成語音
             if full_response.strip():
                 logger.info("文字回應完成，開始轉換語音...")
                 yield f"event: text_complete\ndata: {json.dumps({'message': '文字回應完成，開始轉換語音'}, ensure_ascii=False)}\n\n"
                 
                 try:
-                    # 使用執行器進行 TTS 轉換
-                    audio_bytes = await asyncio.get_event_loop().run_in_executor(
-                        tts_executor, 
-                        synthesize_audio_bytes, 
-                        full_response
-                    )
-                    audio_b64 = base64.b64encode(audio_bytes).decode("utf-8")
+                    # 提取 </think> 後的文字
+                    think_end_marker = "</think>"
+                    if think_end_marker in full_response:
+                        # 找到 </think> 後的所有文字
+                        parts = full_response.split(think_end_marker, 1)
+                        if len(parts) > 1:
+                            tts_text = parts[1].strip()
+                            logger.info(f"提取到 TTS 文字，長度: {len(tts_text)} 字符")
+                        else:
+                            tts_text = full_response.strip()
+                            logger.info("未找到 </think> 標記，使用完整回應")
+                    else:
+                        tts_text = full_response.strip()
+                        logger.info("未找到 </think> 標記，使用完整回應")
                     
-                    # 發送完整的音訊
-                    yield f"event: audio\ndata: {json.dumps({'audio': audio_b64, 'complete': True}, ensure_ascii=False)}\n\n"
-                    logger.info("語音轉換完成")
+                    if tts_text:
+                        # 將文字分割成多個片段
+                        text_chunks = split_text_for_tts(tts_text, max_chunk_size=500)
+                        logger.info(f"文字已分割成 {len(text_chunks)} 個片段")
+                        
+                        # 為每個片段生成音訊
+                        for i, chunk in enumerate(text_chunks):
+                            try:
+                                logger.info(f"正在處理第 {i+1}/{len(text_chunks)} 個音訊片段...")
+                                
+                                # 使用執行器進行 TTS 轉換
+                                audio_bytes = await asyncio.get_event_loop().run_in_executor(
+                                    tts_executor, 
+                                    synthesize_audio_bytes, 
+                                    chunk
+                                )
+                                
+                                audio_b64 = base64.b64encode(audio_bytes).decode("utf-8")
+                                
+                                # 發送音訊片段
+                                is_last = (i == len(text_chunks) - 1)
+                                yield f"event: audio\ndata: {json.dumps({'audio': audio_b64, 'chunk_index': i, 'total_chunks': len(text_chunks), 'is_last': is_last, 'complete': is_last}, ensure_ascii=False)}\n\n"
+                                
+                                logger.info(f"第 {i+1} 個音訊片段完成，大小: {len(audio_bytes)} bytes")
+                                
+                            except Exception as e:
+                                logger.error(f"第 {i+1} 個音訊片段轉換失敗: {e}")
+                                yield f"event: audio_error\ndata: {json.dumps({'error': f'第 {i+1} 個音訊片段轉換失敗: {str(e)}'}, ensure_ascii=False)}\n\n"
+                        
+                        logger.info("所有音訊片段轉換完成")
+                    else:
+                        logger.warning("沒有文字需要轉換為語音")
+                        yield f"event: audio_error\ndata: {json.dumps({'error': '沒有文字需要轉換為語音'}, ensure_ascii=False)}\n\n"
                     
                 except Exception as e:
                     logger.error(f"語音轉換失敗: {e}")
