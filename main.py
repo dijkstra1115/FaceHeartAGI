@@ -165,13 +165,9 @@ async def analyze_stream(request: MedicalAnalysisRequest):
     """
     async def generate_streaming_analysis():
         """
-        升級版：同時串流 LLM 文字與有序 TTS 音訊
+        修改版：先收集完整文字，再一次性轉成語音
         """
         full_response = ""
-        audio_futures = {}       # {index: Future}
-        audio_buffer = OrderedDict()
-        next_audio_index = 0
-        chunk_index = 0
 
         try:
             logger.info(f"收到醫療分析請求，會話ID: {request.device_id}, 問題: {request.user_question}")
@@ -179,6 +175,7 @@ async def analyze_stream(request: MedicalAnalysisRequest):
             fhir = parser_fhir(json.loads(request.fhir_data)) if request.fhir_data else ""
             conversation_history = conversation_manager.format_conversation_history_for_prompt(request.device_id)
 
+            # 第一階段：收集完整文字回應
             async for chunk in rag_client.enhance_response_with_rag_stream(
                 request.user_question,
                 fhir,
@@ -190,48 +187,32 @@ async def analyze_stream(request: MedicalAnalysisRequest):
                     continue
 
                 full_response += chunk
-                idx = chunk_index
-                chunk_index += 1
+                # 立即傳出文字事件
+                yield f"event: text\ndata: {json.dumps({'content': chunk}, ensure_ascii=False)}\n\n"
 
-                # 🔊 提交 TTS 任務（非阻塞）
-                future = tts_executor.submit(lambda text=chunk: synthesize_audio_bytes(text))
-                audio_futures[idx] = future
-
-                # 🔁 立即傳出文字事件
-                yield f"event: text\ndata: {json.dumps({'index': idx, 'content': chunk}, ensure_ascii=False)}\n\n"
-
-                # 🧠 檢查已完成的音訊任務
-                done_indices = [i for i, f in audio_futures.items() if f.done()]
-                for i in sorted(done_indices):
-                    try:
-                        audio_bytes = audio_futures[i].result()
-                        audio_b64 = base64.b64encode(audio_bytes).decode("utf-8")
-                        audio_buffer[i] = audio_b64
-                        del audio_futures[i]
-                    except Exception as e:
-                        logger.warning(f"TTS 任務 {i} 失敗: {e}")
-                        del audio_futures[i]
-
-                # 🧩 按序輸出音訊（確保順序正確）
-                while next_audio_index in audio_buffer:
-                    audio_b64 = audio_buffer[next_audio_index]
-                    data = {'index': next_audio_index, 'audio': audio_b64}
-                    yield f"event: audio\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
-                    del audio_buffer[next_audio_index]
-                    next_audio_index += 1
-
-            # 🎯 處理最後未完成的 TTS 任務
-            for i, f in sorted(audio_futures.items()):
-                try:
-                    audio_bytes = f.result()
-                    audio_b64 = base64.b64encode(audio_bytes).decode("utf-8")
-                    data = {'index': i, 'audio': audio_b64}
-                    yield f"event: audio\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
-                except Exception as e:
-                    logger.warning(f"結尾音訊輸出錯誤 (index {i}): {e}")
-
-            # ✅ 記錄完整對話
+            # 第二階段：文字完成後，一次性轉成語音
             if full_response.strip():
+                logger.info("文字回應完成，開始轉換語音...")
+                yield f"event: text_complete\ndata: {json.dumps({'message': '文字回應完成，開始轉換語音'}, ensure_ascii=False)}\n\n"
+                
+                try:
+                    # 使用執行器進行 TTS 轉換
+                    audio_bytes = await asyncio.get_event_loop().run_in_executor(
+                        tts_executor, 
+                        synthesize_audio_bytes, 
+                        full_response
+                    )
+                    audio_b64 = base64.b64encode(audio_bytes).decode("utf-8")
+                    
+                    # 發送完整的音訊
+                    yield f"event: audio\ndata: {json.dumps({'audio': audio_b64, 'complete': True}, ensure_ascii=False)}\n\n"
+                    logger.info("語音轉換完成")
+                    
+                except Exception as e:
+                    logger.error(f"語音轉換失敗: {e}")
+                    yield f"event: audio_error\ndata: {json.dumps({'error': f'語音轉換失敗: {str(e)}'}, ensure_ascii=False)}\n\n"
+
+                # ✅ 記錄完整對話
                 await conversation_manager.add_conversation_turn(
                     request.device_id,
                     request.user_question,

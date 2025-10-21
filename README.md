@@ -65,7 +65,7 @@ OPENROUTER_API_KEY=your_api_key_here
 
 ### 4. 下載 TTS 模型
 ```bash
-python3 -m piper.download_voices zh_CN-huayan-medium
+python3 -m piper.download_voices en_US-lessac-medium
 ```
 
 ### 5. 啟動服務
