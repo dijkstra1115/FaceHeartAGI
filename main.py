@@ -53,7 +53,7 @@ conversation_manager = ConversationManager()
 
 # 初始化 Piper 語音模型（只載入一次）
 PIPER_VOICE_PATH = "./en_US-lessac-medium.onnx"
-voice = PiperVoice.load(PIPER_VOICE_PATH, use_cuda=True)  # 改 True 若要用 GPU
+voice = PiperVoice.load(PIPER_VOICE_PATH, use_cuda=False)  # 改 True 若要用 GPU
 
 # 可調參數（選用）
 piper_config = SynthesisConfig(
@@ -260,7 +260,7 @@ async def analyze_stream(request: MedicalAnalysisRequest):
                     
                     if tts_text:
                         # 將文字分割成多個片段
-                        text_chunks = split_text_for_tts(tts_text, max_chunk_size=500)
+                        text_chunks = split_text_for_tts(tts_text, max_chunk_size=100)
                         logger.info(f"文字已分割成 {len(text_chunks)} 個片段")
                         
                         # 為每個片段生成音訊
