@@ -24,13 +24,12 @@ load_dotenv()
 # TTS 相關導入
 try:
     import piper
+    import wave
+    import io
     TTS_AVAILABLE = True
-    ENGLISH_CONFIG = piper.SynthesisConfig(
-        length_scale=1.0,  # 語速
-        noise_scale=0.667,
-        noise_w_scale=0.8,
-        volume=1.0
-    )
+    config_path = Path("./voices/en_US-lessac-medium.onnx.json")
+    with open(config_path, "r", encoding="utf-8") as f:
+        ENGLISH_CONFIG = json.load(f)
 except ImportError:
     TTS_AVAILABLE = False
 
@@ -116,8 +115,13 @@ class TTSService:
             pure_text = text.split("</think>")[-1].strip()
             
             # 生成語音
+            buffer = io.BytesIO()
+            with wave.open(buffer, "wb") as wav_file:
+                self.tts.synthesize_wav(pure_text, wav_file, syn_config=ENGLISH_CONFIG)
+
+            buffer.seek(0)
             with open(audio_path, "wb") as f:
-                self.tts.synthesize_wav(pure_text, f, config=ENGLISH_CONFIG)
+                f.write(buffer.read())
             
             # 緩存文件路徑
             self.audio_cache[audio_id] = str(audio_path)
