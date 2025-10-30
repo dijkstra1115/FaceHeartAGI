@@ -25,6 +25,12 @@ load_dotenv()
 try:
     import piper
     TTS_AVAILABLE = True
+    ENGLISH_CONFIG = piper.SynthesisConfig(
+        length_scale=1.0,  # 語速
+        noise_scale=0.667,
+        noise_w_scale=0.8,
+        volume=1.0
+    )
 except ImportError:
     TTS_AVAILABLE = False
 
@@ -106,10 +112,12 @@ class TTSService:
             # 生成唯一文件名
             audio_id = str(uuid.uuid4())
             audio_path = self.audio_dir / f"{device_id}_{audio_id}.wav"
+
+            pure_text = text.split("</think>")[-1].strip()
             
             # 生成語音
             with open(audio_path, "wb") as f:
-                self.tts.synthesize_wav(text.split("</think>")[-1].strip(), f)
+                self.tts.synthesize_wav(pure_text, f, config=ENGLISH_CONFIG)
             
             # 緩存文件路徑
             self.audio_cache[audio_id] = str(audio_path)
