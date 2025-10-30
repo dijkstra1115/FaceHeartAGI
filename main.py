@@ -109,7 +109,7 @@ class TTSService:
             
             # 生成語音
             with open(audio_path, "wb") as f:
-                self.tts.synthesize(text, f)
+                self.tts.synthesize_wav(text.split("</think>")[-1].strip(), f)
             
             # 緩存文件路徑
             self.audio_cache[audio_id] = str(audio_path)

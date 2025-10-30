@@ -91,35 +91,53 @@ async def send_question(session: aiohttp.ClientSession, device_id: str, question
                 chunk_count = 0
                 audio_id = None
                 
-                async for line in response.content:
-                    line = line.decode('utf-8').strip()
-                    if line.startswith('data: '):
+                current_event = None  # 追蹤上一個 event 名稱
+
+                async for raw in response.content:
+                    line = raw.decode("utf-8").strip()
+
+                    # 空行代表一個 SSE 事件結束
+                    if line == "":
+                        current_event = None
+                        continue
+
+                    if line.startswith("event: "):
+                        current_event = line[7:].strip()
+                        continue
+
+                    if line.startswith("data: "):
                         data_str = line[6:]
-                        try:
-                            data = json.loads(data_str)
-                            if 'content' in data:
-                                chunk_count += 1
-                                content = data['content']
-                                print(content, end='', flush=True)
-                                full_response += content
-                        except json.JSONDecodeError:
-                            continue
-                    elif line.startswith('event: audio_ready'):
-                        # 處理語音生成完成事件
-                        data_str = line.split('\n')[1][6:]  # 獲取 data: 後面的內容
-                        try:
-                            audio_data = json.loads(data_str)
-                            audio_id = audio_data.get('audio_id')
-                            print(f"\n🔊 語音生成完成，audio_id: {audio_id}")
-                        except json.JSONDecodeError:
-                            pass
-                    elif line.startswith('event: audio_error'):
-                        # 處理語音生成錯誤事件
-                        data_str = line.split('\n')[1][6:]
-                        try:
-                            error_data = json.loads(data_str)
-                            print(f"\n❌ 語音生成錯誤: {error_data.get('error', '未知錯誤')}")
-                        except json.JSONDecodeError:
+                        # chunk 事件（一般回覆內容）
+                        if current_event == "chunk":
+                            try:
+                                data = json.loads(data_str)
+                                if "content" in data:
+                                    chunk_count += 1
+                                    content = data["content"]
+                                    print(content, end="", flush=True)
+                                    full_response += content
+                            except json.JSONDecodeError:
+                                pass
+
+                        # 語音生成完成
+                        elif current_event == "audio_ready":
+                            try:
+                                audio_data = json.loads(data_str)
+                                audio_id = audio_data.get("audio_id")
+                                print(f"\n🔊 語音生成完成，audio_id: {audio_id}")
+                            except json.JSONDecodeError:
+                                pass
+
+                        # 語音生成錯誤
+                        elif current_event == "audio_error":
+                            try:
+                                error_data = json.loads(data_str)
+                                print(f"\n❌ 語音生成錯誤: {error_data.get('error', '未知錯誤')}")
+                            except json.JSONDecodeError:
+                                pass
+
+                        # 其他事件（start/end等）就忽略或視需要處理
+                        else:
                             pass
                 
                 print(f"\n\n📊 第 {turn_number} 輪統計:")
@@ -172,15 +190,15 @@ async def test_sequential_conversation():
         "What are the symptoms of diabites?",
         "What are the symptoms of hypertension?",
         "What are the potential risks based on my FHIR data?",
-        "What are the changes in my FHIR history?",
-        "What are the recommendations for my health?",
-        "What kind of food should I eat?",
-        "What kind of ingredients should I avoid?",
-        "What are the changes in my FHIR history?",
-        "What did I just ask you?",
-        "Could you suggest me how to excercise to avoid hypertension?",
-        "What's my BP changes within a month?",
-        "Do I have any underlying diseases?"
+        # "What are the changes in my FHIR history?",
+        # "What are the recommendations for my health?",
+        # "What kind of food should I eat?",
+        # "What kind of ingredients should I avoid?",
+        # "What are the changes in my FHIR history?",
+        # "What did I just ask you?",
+        # "Could you suggest me how to excercise to avoid hypertension?",
+        # "What's my BP changes within a month?",
+        # "Do I have any underlying diseases?"
     ]
     
     async with aiohttp.ClientSession() as session:
