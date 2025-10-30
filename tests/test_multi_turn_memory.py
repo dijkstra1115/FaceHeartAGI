@@ -65,17 +65,20 @@ def load_custom_knowledge_base():
 FHIR_DATA_LIST = load_fhir_data_files()
 CUSTOM_KNOWLEDGE_BASE = load_custom_knowledge_base()
 
-async def send_question(session: aiohttp.ClientSession, device_id: str, question: str, turn_number: int, fhir_data: Dict[str, Any]):
+async def send_question(session: aiohttp.ClientSession, device_id: str, question: str, turn_number: int, fhir_data: Dict[str, Any], generate_audio: bool = False):
     """發送問題並獲取回應"""
     print(f"\n--- Turn {turn_number} ---")
     print(f"❓ User Question: {question}")
+    if generate_audio:
+        print("🔊 語音生成已啟用")
     
     payload = {
         "device_id": device_id,
         "knowledge_base": CUSTOM_KNOWLEDGE_BASE,
         "fhir_data": fhir_data,
         "user_question": question,
-        "retrieval_type": "vector"
+        "retrieval_type": "vector",
+        "generate_audio": generate_audio
     }
     
     try:
@@ -86,6 +89,7 @@ async def send_question(session: aiohttp.ClientSession, device_id: str, question
                 # 收集完整回應
                 full_response = ""
                 chunk_count = 0
+                audio_id = None
                 
                 async for line in response.content:
                     line = line.decode('utf-8').strip()
@@ -100,12 +104,32 @@ async def send_question(session: aiohttp.ClientSession, device_id: str, question
                                 full_response += content
                         except json.JSONDecodeError:
                             continue
+                    elif line.startswith('event: audio_ready'):
+                        # 處理語音生成完成事件
+                        data_str = line.split('\n')[1][6:]  # 獲取 data: 後面的內容
+                        try:
+                            audio_data = json.loads(data_str)
+                            audio_id = audio_data.get('audio_id')
+                            print(f"\n🔊 語音生成完成，audio_id: {audio_id}")
+                        except json.JSONDecodeError:
+                            pass
+                    elif line.startswith('event: audio_error'):
+                        # 處理語音生成錯誤事件
+                        data_str = line.split('\n')[1][6:]
+                        try:
+                            error_data = json.loads(data_str)
+                            print(f"\n❌ 語音生成錯誤: {error_data.get('error', '未知錯誤')}")
+                        except json.JSONDecodeError:
+                            pass
                 
                 print(f"\n\n📊 第 {turn_number} 輪統計:")
                 print(f"   回應片段數: {chunk_count}")
                 print(f"   回應長度: {len(full_response)} 字符")
+                if audio_id:
+                    print(f"   語音文件ID: {audio_id}")
+                    print(f"   語音播放URL: {BASE_URL}/audio/{device_id}/{audio_id}")
                 
-                return full_response
+                return {"response": full_response, "audio_id": audio_id}
             else:
                 error_text = await response.text()
                 print(f"❌ 請求失敗: {response.status} - {error_text}")
@@ -113,6 +137,28 @@ async def send_question(session: aiohttp.ClientSession, device_id: str, question
     except Exception as e:
         print(f"❌ 連接錯誤: {str(e)}")
         return None
+
+async def test_audio_playback(session: aiohttp.ClientSession, device_id: str, audio_id: str):
+    """測試語音播放功能"""
+    print(f"\n🔊 測試語音播放功能")
+    print(f"   設備ID: {device_id}")
+    print(f"   語音ID: {audio_id}")
+    
+    try:
+        async with session.get(f"{BASE_URL}/audio/{device_id}/{audio_id}") as response:
+            if response.status == 200:
+                audio_data = await response.read()
+                print(f"✅ 語音文件獲取成功")
+                print(f"   文件大小: {len(audio_data)} bytes")
+                print(f"   內容類型: {response.headers.get('content-type', 'unknown')}")
+                return True
+            else:
+                error_text = await response.text()
+                print(f"❌ 語音播放失敗: {response.status} - {error_text}")
+                return False
+    except Exception as e:
+        print(f"❌ 語音播放連接錯誤: {str(e)}")
+        return False
 
 async def test_sequential_conversation():
     """測試連續對話的記憶效果"""
@@ -149,9 +195,16 @@ async def test_sequential_conversation():
             fhir_data_index = (i - 1) % len(FHIR_DATA_LIST)
             fhir_data = FHIR_DATA_LIST[fhir_data_index]
             
-            response = await send_question(session, device_id, question, i, fhir_data)
-            if response:
-                responses.append(response)
+            # 每隔幾輪啟用語音生成
+            generate_audio = (i % 3 == 0)  # 每3輪啟用一次語音生成
+            
+            result = await send_question(session, device_id, question, i, fhir_data, generate_audio)
+            if result:
+                responses.append(result)
+                
+                # 如果有語音文件，測試播放功能
+                if result.get("audio_id"):
+                    await test_audio_playback(session, device_id, result["audio_id"])
             
             # 在對話之間稍作停頓
             if i < len(questions):
@@ -210,7 +263,8 @@ async def main():
         print("✅ 所有記憶效果測試完成！")
         print("\n💡 測試說明:")
         print("   • 連續對話測試：展示LLM如何利用歷史對話提供連貫回應")
-        print("   • 獨立對話測試：對比無歷史記憶時的回應差異")
+        print("   • 語音生成測試：每3輪對話啟用語音生成功能")
+        print("   • 語音播放測試：驗證語音文件可以正常獲取和播放")
         print("   • 上下文感知測試：驗證LLM對具體信息的記憶能力")
         print("   • 通過比較可以觀察到對話記憶對回應質量的影響")
         

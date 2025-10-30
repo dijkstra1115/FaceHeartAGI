@@ -10,6 +10,9 @@ import json
 import logging
 from datetime import datetime
 import asyncio
+import tempfile
+import uuid
+from pathlib import Path
 
 from src.utils.db import init_db
 from src.rag_client import RAGClient
@@ -17,6 +20,13 @@ from src.conversation_manager import ConversationManager
 from src.utils.data_parser import parser_fhir
 
 load_dotenv()
+
+# TTS 相關導入
+try:
+    import piper
+    TTS_AVAILABLE = True
+except ImportError:
+    TTS_AVAILABLE = False
 
 init_db()
 
@@ -59,6 +69,66 @@ def load_default_knowledge_base():
 # 載入預設知識庫
 DEFAULT_KNOWLEDGE_BASE = load_default_knowledge_base()
 
+# TTS 服務類
+class TTSService:
+    """語音合成服務"""
+    
+    def __init__(self):
+        self.audio_cache = {}  # 音頻文件緩存
+        self.audio_dir = Path("./audio_cache")
+        self.audio_dir.mkdir(exist_ok=True)
+
+        self.voices_dir = Path("./voices")
+        self.voices_dir.mkdir(exist_ok=True)
+        
+        if TTS_AVAILABLE:
+            try:
+                # 使用項目內的語音模型
+                model_path = self.voices_dir / "en_US-lessac-medium"
+                if model_path.exists():
+                    self.tts = piper.PiperVoice.load(str(model_path), config_path=None, use_cuda=False)
+                else:
+                    # 如果項目內沒有模型，使用預設位置
+                    self.tts = piper.PiperVoice.load("en_US-lessac-medium", config_path=None, use_cuda=False)
+                print("Piper TTS 初始化成功")
+            except Exception as e:
+                print(f"Piper TTS 初始化失敗: {e}")
+                self.tts = None
+        else:
+            self.tts = None
+    
+    def generate_audio(self, text: str, device_id: str) -> Optional[str]:
+        """生成語音文件並返回文件路徑"""
+        if not self.tts:
+            print("TTS 服務不可用")
+            return None
+        
+        try:
+            # 生成唯一文件名
+            audio_id = str(uuid.uuid4())
+            audio_path = self.audio_dir / f"{device_id}_{audio_id}.wav"
+            
+            # 生成語音
+            with open(audio_path, "wb") as f:
+                self.tts.synthesize(text, f)
+            
+            # 緩存文件路徑
+            self.audio_cache[audio_id] = str(audio_path)
+            
+            print(f"語音文件生成成功: {audio_path}")
+            return str(audio_path)
+            
+        except Exception as e:
+            print(f"語音生成失敗: {e}")
+            return None
+    
+    def get_audio_path(self, audio_id: str) -> Optional[str]:
+        """根據 audio_id 獲取音頻文件路徑"""
+        return self.audio_cache.get(audio_id)
+
+# 初始化 TTS 服務
+tts_service = TTSService()
+
 # Pydantic 模型
 class MedicalAnalysisRequest(BaseModel):
     """醫療分析請求模型"""
@@ -67,10 +137,16 @@ class MedicalAnalysisRequest(BaseModel):
     user_question: str  # 用戶問題
     fhir_data: Optional[str]  # 個人 FHIR 資料
     retrieval_type: Optional[str] = "vector"  # LLM 或向量檢索 ("llm" 或 "vector")
+    generate_audio: Optional[bool] = False  # 是否生成語音
 
 class ConversationHistoryRequest(BaseModel):
     """對話歷史請求模型"""
     device_id: str
+
+class AudioRequest(BaseModel):
+    """語音播放請求模型"""
+    device_id: str
+    audio_id: str
 
 class APIResponse(BaseModel):
     success: bool
@@ -137,9 +213,11 @@ async def analyze_stream(request: MedicalAnalysisRequest):
     """
     async def generate_streaming_analysis():
         full_response = ""  # 用於收集完整回應
+        audio_id = None  # 語音文件ID
         try:
             logger.info(f"收到醫療分析請求，會話ID: {request.device_id}, 問題: {request.user_question}")
             logger.info(f"檢索類型: {request.retrieval_type}")
+            logger.info(f"生成語音: {request.generate_audio}")
             
             # 使用預設知識庫模板（如果沒有提供）
             knowledge_base = request.knowledge_base if request.knowledge_base else DEFAULT_KNOWLEDGE_BASE
@@ -174,6 +252,24 @@ async def analyze_stream(request: MedicalAnalysisRequest):
                         pass
                 
                 yield chunk
+            
+            # 生成語音（如果需要）
+            if request.generate_audio and full_response.strip():
+                try:
+                    audio_path = tts_service.generate_audio(full_response, request.device_id)
+                    if audio_path:
+                        # 從路徑中提取 audio_id
+                        audio_id = Path(audio_path).stem.split('_')[-1]
+                        logger.info(f"語音生成成功，audio_id: {audio_id}")
+                        
+                        # 發送語音生成完成事件
+                        yield f"event: audio_ready\ndata: {json.dumps({'audio_id': audio_id, 'message': '語音生成完成'}, ensure_ascii=False)}\n\n"
+                    else:
+                        logger.warning("語音生成失敗")
+                        yield f"event: audio_error\ndata: {json.dumps({'error': '語音生成失敗'}, ensure_ascii=False)}\n\n"
+                except Exception as e:
+                    logger.error(f"語音生成過程中發生錯誤: {e}")
+                    yield f"event: audio_error\ndata: {json.dumps({'error': f'語音生成錯誤: {str(e)}'}, ensure_ascii=False)}\n\n"
             
             # 記錄完整的對話輪次
             if full_response.strip():
@@ -228,6 +324,49 @@ async def clear_session(request: ConversationHistoryRequest):
         logger.error(f"清除會話記錄時發生錯誤: {str(e)}")
         raise HTTPException(status_code=500, detail=f"清除會話記錄失敗: {str(e)}")
 
+# 語音播放端點
+@app.get("/audio/{device_id}/{audio_id}")
+async def get_audio(device_id: str, audio_id: str):
+    """
+    獲取語音文件
+    
+    參數:
+    - device_id: 識別 ID
+    - audio_id: 語音文件 ID
+    
+    返回:
+    - 音頻文件流
+    """
+    try:
+        # 從 TTS 服務獲取音頻文件路徑
+        audio_path = tts_service.get_audio_path(audio_id)
+        
+        if not audio_path or not Path(audio_path).exists():
+            raise HTTPException(status_code=404, detail="語音文件不存在")
+        
+        # 檢查文件是否屬於該設備
+        if not audio_path.endswith(f"{device_id}_{audio_id}.wav"):
+            raise HTTPException(status_code=403, detail="無權限訪問此語音文件")
+        
+        # 讀取音頻文件
+        with open(audio_path, "rb") as f:
+            audio_data = f.read()
+        
+        return Response(
+            content=audio_data,
+            media_type="audio/wav",
+            headers={
+                "Content-Disposition": f"inline; filename={device_id}_{audio_id}.wav",
+                "Cache-Control": "public, max-age=3600"
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"獲取語音文件時發生錯誤: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"獲取語音文件失敗: {str(e)}")
+
 # API 協助端點
 @app.get("/help")
 async def help_api():
@@ -239,6 +378,7 @@ async def help_api():
             "/": "健康檢查",
             "/analyze-stream": "醫療分析串流端點",
             "/clear-session": "清除會話記錄",
+            "/audio/{device_id}/{audio_id}": "語音文件播放端點",
             "/docs": "Swagger UI 文檔（FastAPI 自動生成）",
             "/redoc": "ReDoc 文檔（FastAPI 自動生成）"
         },
@@ -246,7 +386,9 @@ async def help_api():
             "異步串流回應（醫療分析）",
             "支援傳統和向量檢索",
             "預設知識庫模板",
-            "FHIR 資料解析"
+            "FHIR 資料解析",
+            "語音合成（Piper TTS）",
+            "語音文件播放"
         ],
         "retrieval_types": {
             "vector": "向量檢索（預設）",
