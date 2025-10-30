@@ -27,9 +27,10 @@ try:
     import wave
     import io
     TTS_AVAILABLE = True
+    from piper import SynthesisConfig
     config_path = Path("./voices/en_US-lessac-medium.onnx.json")
     with open(config_path, "r", encoding="utf-8") as f:
-        ENGLISH_CONFIG = json.load(f)
+        ENGLISH_CONFIG = SynthesisConfig.from_json(f.read())
 except ImportError:
     TTS_AVAILABLE = False
 
