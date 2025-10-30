@@ -111,7 +111,7 @@ class TTSService:
         try:
             # 生成唯一文件名
             audio_id = str(uuid.uuid4())
-            audio_path = self.audio_dir / f"{device_id}_{audio_id}.wav"
+            audio_path = self.build_audio_path(device_id, audio_id)
 
             pure_text = text.split("</think>")[-1].strip()
             
@@ -135,9 +135,6 @@ class TTSService:
                 logger.error("寫檔後仍為 0 bytes")
                 return None
             
-            # 緩存文件路徑
-            self.audio_cache[audio_id] = str(audio_path)
-            
             print(f"語音文件生成成功: {audio_path}")
             return str(audio_path)
             
@@ -145,9 +142,9 @@ class TTSService:
             print(f"語音生成失敗: {e}")
             return None
     
-    def get_audio_path(self, audio_id: str) -> Optional[str]:
-        """根據 audio_id 獲取音頻文件路徑"""
-        return self.audio_cache.get(audio_id)
+    def build_audio_path(self, device_id: str, audio_id: str) -> Path:
+        # 固定命名規則，集中管理
+        return self.audio_dir / f"{device_id}_{audio_id}.wav"
 
 # 初始化 TTS 服務
 tts_service = TTSService()
@@ -362,7 +359,7 @@ async def get_audio(device_id: str, audio_id: str):
     """
     try:
         # 從 TTS 服務獲取音頻文件路徑
-        audio_path = tts_service.get_audio_path(audio_id)
+        audio_path = tts_service.build_audio_path(device_id, audio_id)
         
         if not audio_path or not Path(audio_path).exists():
             raise HTTPException(status_code=404, detail="語音文件不存在")

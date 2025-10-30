@@ -188,8 +188,8 @@ async def test_sequential_conversation():
     # 設計一系列相關的問題，測試LLM的記憶能力
     questions = [
         "What are the symptoms of diabites?",
-        "What are the symptoms of hypertension?",
-        "What are the potential risks based on my FHIR data?",
+        # "What are the symptoms of hypertension?",
+        # "What are the potential risks based on my FHIR data?",
         # "What are the changes in my FHIR history?",
         # "What are the recommendations for my health?",
         # "What kind of food should I eat?",
@@ -213,10 +213,7 @@ async def test_sequential_conversation():
             fhir_data_index = (i - 1) % len(FHIR_DATA_LIST)
             fhir_data = FHIR_DATA_LIST[fhir_data_index]
             
-            # 每隔幾輪啟用語音生成
-            generate_audio = (i % 3 == 0)  # 每3輪啟用一次語音生成
-            
-            result = await send_question(session, device_id, question, i, fhir_data, generate_audio)
+            result = await send_question(session, device_id, question, i, fhir_data, True)
             if result:
                 responses.append(result)
                 
