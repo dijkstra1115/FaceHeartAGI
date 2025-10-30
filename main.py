@@ -84,12 +84,11 @@ class TTSService:
         if TTS_AVAILABLE:
             try:
                 # 使用項目內的語音模型
-                model_path = self.voices_dir / "en_US-lessac-medium"
-                if model_path.exists():
-                    self.tts = piper.PiperVoice.load(str(model_path), config_path=None, use_cuda=False)
+                model_path = os.path.join(self.voices_dir, "en_US-lessac-medium.onnx")
+                if os.path.exists(model_path):
+                    self.tts = piper.PiperVoice.load(model_path, config_path=None, use_cuda=False)
                 else:
-                    # 如果項目內沒有模型，使用預設位置
-                    self.tts = piper.PiperVoice.load("en_US-lessac-medium", config_path=None, use_cuda=False)
+                    raise FileNotFoundError(f"語音模型文件不存在: {model_path}")
                 print("Piper TTS 初始化成功")
             except Exception as e:
                 print(f"Piper TTS 初始化失敗: {e}")
