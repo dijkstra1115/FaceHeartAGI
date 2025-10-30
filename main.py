@@ -27,10 +27,10 @@ try:
     import wave
     import io
     TTS_AVAILABLE = True
-    from piper import SynthesisConfig
-    config_path = Path("./voices/en_US-lessac-medium.onnx.json")
-    with open(config_path, "r", encoding="utf-8") as f:
-        ENGLISH_CONFIG = SynthesisConfig.from_json(f.read())
+    # from piper import SynthesisConfig
+    # config_path = Path("./voices/en_US-lessac-medium.onnx.json")
+    # with open(config_path, "r", encoding="utf-8") as f:
+    #     ENGLISH_CONFIG = SynthesisConfig.from_json(f.read())
 except ImportError:
     TTS_AVAILABLE = False
 
@@ -116,9 +116,8 @@ class TTSService:
             pure_text = text.split("</think>")[-1].strip()
             
             buffer = io.BytesIO()
-            # 直接把「原始 BytesIO」丟給 TTS，讓它寫入完整 WAV（含 header）
-            # 註：有些版本參數叫 config= 而非 syn_config=，若報參數名錯誤就換成 config=
-            self.tts.synthesize_wav(pure_text, buffer, syn_config=ENGLISH_CONFIG)
+            with wave.open(buffer, "wb") as wav_file:
+                self.tts.synthesize_wav(pure_text, wav_file)
 
             data = buffer.getvalue()
             if not data:

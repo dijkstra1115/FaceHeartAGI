@@ -107,6 +107,8 @@ class RAGClient:
         enhancement_prompt = PromptBuilder.build_enhancement_prompt(
             user_question, fhir_data, retrieved_context, conversation_history
         )
+
+        # print(f"Enhancement Prompt: {enhancement_prompt}")  # Debugging line
         
         messages = [
             {
