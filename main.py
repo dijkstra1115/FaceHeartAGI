@@ -91,7 +91,7 @@ class TTSService:
                 # 使用項目內的語音模型
                 model_path = os.path.join(self.voices_dir, "en_US-lessac-medium.onnx")
                 if os.path.exists(model_path):
-                    self.tts = piper.PiperVoice.load(model_path, config_path=None, use_cuda=False)
+                    self.tts = piper.PiperVoice.load(model_path, use_cuda=False)
                 else:
                     raise FileNotFoundError(f"語音模型文件不存在: {model_path}")
                 print("Piper TTS 初始化成功")
@@ -114,14 +114,26 @@ class TTSService:
 
             pure_text = text.split("</think>")[-1].strip()
             
-            # 生成語音
             buffer = io.BytesIO()
-            with wave.open(buffer, "wb") as wav_file:
-                self.tts.synthesize_wav(pure_text, wav_file, syn_config=ENGLISH_CONFIG)
+            # 直接把「原始 BytesIO」丟給 TTS，讓它寫入完整 WAV（含 header）
+            # 註：有些版本參數叫 config= 而非 syn_config=，若報參數名錯誤就換成 config=
+            self.tts.synthesize_wav(pure_text, buffer, syn_config=ENGLISH_CONFIG)
 
-            buffer.seek(0)
-            with open(audio_path, "wb") as f:
-                f.write(buffer.read())
+            data = buffer.getvalue()
+            if not data:
+                logger.error("Piper 沒有輸出任何音訊資料")
+                return None
+
+            tmp_path = Path(audio_path).with_suffix(".tmp")
+            with open(tmp_path, "wb") as f:
+                f.write(data)
+                f.flush()
+                os.fsync(f.fileno())
+
+            os.replace(tmp_path, audio_path)  # 原子搬移
+            if Path(audio_path).stat().st_size == 0:
+                logger.error("寫檔後仍為 0 bytes")
+                return None
             
             # 緩存文件路徑
             self.audio_cache[audio_id] = str(audio_path)
