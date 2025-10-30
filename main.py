@@ -359,7 +359,7 @@ async def get_audio(device_id: str, audio_id: str):
     """
     try:
         # 從 TTS 服務獲取音頻文件路徑
-        audio_path = tts_service.build_audio_path(device_id, audio_id)
+        audio_path = str(tts_service.build_audio_path(device_id, audio_id))
         
         if not audio_path or not Path(audio_path).exists():
             raise HTTPException(status_code=404, detail="語音文件不存在")
