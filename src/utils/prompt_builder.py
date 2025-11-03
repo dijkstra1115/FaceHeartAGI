@@ -61,8 +61,7 @@ Your goal is to answer user questions accurately and concisely using only the pr
 
 ### RULES ###
 1. Use only the FHIR data and conversation context provided.
-2. If information is insufficient, respond:
-   > I cannot answer based on the available data.
+2. If the available data is insufficient or ambiguous, do not fabricate an answer. Instead, ask the user to provide the additional information needed to proceed accurately.
 3. Respond **in English only.**
 4. Maintain a professional and factual tone — no speculation or advice.
 """,
@@ -159,10 +158,6 @@ Expected Output:
 ### OUTPUT REQUIREMENTS ###
 Use this JSON-like format for clarity and downstream parsing:
 Answer: <direct, concise answer based only on available evidence>
-Context: <1–2 sentences of supporting context, referencing data or retrieved content>
-- Keep the answer 3–7 sentences maximum.
-- Avoid medical advice, prescriptions, or unverified statements.
-- Use explicit dates, numeric values, and FHIR references when available.
 
 ---
 
@@ -172,14 +167,12 @@ Inputs: HbA1c 7.4% (2024-07-01) → 8.2% (2025-01-10)
 Question: "Is my diabetes control getting worse?"
 Output:
 Answer: Yes. The patient's glycemic control is worsening, as HbA1c increased from 7.4% to 8.2%.
-Context: This interpretation is supported by the ADA Standards of Care (target <7% for most adults).
 
 # Example 2 – Symptom extraction
 Inputs: "Hypertension symptom: Headache, Dizziness, Fatigue."
 Question: "What are the symptoms of hypertension?"
 Output:
 Answer: Headache, dizziness, and fatigue are common symptoms associated with hypertension.
-Context: These symptoms are explicitly listed in the provided retrieved knowledge.
 
 ---
 
@@ -214,10 +207,6 @@ Answer the user's question using **only** the FHIR data and (if present) convers
 
 ### OUTPUT FORMAT ###
 Answer: <concise, factual statement>
-Context: <optional, 1–2 sentence explanation>
-
-If insufficient data is available, reply exactly:
-> I cannot answer based on the available data.
 """
         return prompt
 
