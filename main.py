@@ -390,29 +390,21 @@ async def get_audio(device_id: str, audio_id: str):
 # API 協助端點
 @app.get("/help")
 async def help_api():
-    """API 協助"""
+    """API assistance"""
     return {
         "title": "FaceHeartAGI API v3.0",
-        "description": "FHIR 醫療資料分析與 RAG 增強 LLM 互動 API",
+        "description": "FHIR medical analysis and RAG enhanced LLM interactive API",
         "endpoints": {
-            "/": "健康檢查",
-            "/analyze-stream": "醫療分析串流端點",
-            "/clear-session": "清除會話記錄",
-            "/audio/{device_id}/{audio_id}": "語音文件播放端點",
-            "/docs": "Swagger UI 文檔（FastAPI 自動生成）",
-            "/redoc": "ReDoc 文檔（FastAPI 自動生成）"
+            "/": "Health check",
+            "/analyze-stream": "Medical analysis streaming endpoint",
+            "/clear-session": "Clear session records",
+            "/audio/{device_id}/{audio_id}": "Audio file playback endpoint",
+            "/docs": "Swagger UI document (FastAPI automatically generated)",
+            "/redoc": "ReDoc document (FastAPI automatically generated)"
         },
-        "features": [
-            "異步串流回應（醫療分析）",
-            "支援傳統和向量檢索",
-            "預設知識庫模板",
-            "FHIR 資料解析",
-            "語音合成（Piper TTS）",
-            "語音文件播放"
-        ],
         "retrieval_types": {
-            "vector": "向量檢索（預設）",
-            "llm": "LLM 檢索"
+            "vector": "Vector search (default)",
+            "llm": "LLM search"
         }
     }
 
