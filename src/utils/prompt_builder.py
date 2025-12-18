@@ -156,8 +156,7 @@ Expected Output:
 ---
 
 ### OUTPUT REQUIREMENTS ###
-Use this JSON-like format for clarity and downstream parsing:
-Answer: <direct, concise answer based only on available evidence>
+Direct, concise answer based only on available evidence.
 
 ---
 
@@ -166,13 +165,13 @@ Answer: <direct, concise answer based only on available evidence>
 Inputs: HbA1c 7.4% (2024-07-01) → 8.2% (2025-01-10)
 Question: "Is my diabetes control getting worse?"
 Output:
-Answer: Yes. The patient's glycemic control is worsening, as HbA1c increased from 7.4% to 8.2%.
+Yes. The patient's glycemic control is worsening, as HbA1c increased from 7.4% to 8.2%.
 
 # Example 2 – Symptom extraction
 Inputs: "Hypertension symptom: Headache, Dizziness, Fatigue."
 Question: "What are the symptoms of hypertension?"
 Output:
-Answer: Headache, dizziness, and fatigue are common symptoms associated with hypertension.
+Headache, dizziness, and fatigue are common symptoms associated with hypertension.
 
 ---
 
@@ -204,9 +203,6 @@ Now analyze the inputs and produce your response following the required format a
 
 ### TASK ###
 Answer the user's question using **only** the FHIR data and (if present) conversation history.
-
-### OUTPUT FORMAT ###
-Answer: <concise, factual statement>
 """
         return prompt
 
