@@ -55,9 +55,9 @@ class RAGClient:
             增強回應的文字片段
         """
         try:
-            # 根據檢索類型設定 RAG 客戶端
+            # 根據檢索類型設定 RAG 客戶端（使用依賴注入避免重複創建 LLMClient）
             if retrieval_type == "llm":
-                retrieval_strategy = LLMRetrievalStrategy()
+                retrieval_strategy = LLMRetrievalStrategy(self.llm_client)
             else:
                 retrieval_strategy = VectorRetrievalStrategy()
 

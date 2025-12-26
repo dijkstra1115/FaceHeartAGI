@@ -43,11 +43,16 @@ class VectorRetrievalStrategy(RetrievalStrategy):
     def retrieve(self, user_question: str, database_content: Dict[str, Any]) -> str:
         """使用向量檢索"""
         try:
-            # 動態創建向量資料庫
-            logger.info("開始動態創建向量資料庫...")
-            self.vector_store.add_medical_documents(database_content)
+            # 1. 確保靜態知識庫已加載（只加載一次）
+            logger.info("檢查靜態知識庫加載狀態...")
+            self.vector_store.add_medical_documents(None)  # None 表示加載靜態知識庫
             
-            # 使用向量檢索
+            # 2. 如果提供了用戶自定義知識庫，追加到索引中
+            if database_content:
+                logger.info("檢測到用戶提供的知識庫內容，追加到向量索引...")
+                self.vector_store.add_medical_documents(database_content)
+            
+            # 3. 使用向量檢索
             results = self.vector_store.search_medical_context(
                 user_question, 
                 top_k=int(os.getenv("VECTOR_SEARCH_TOP_K", 5))
@@ -76,10 +81,16 @@ class VectorRetrievalStrategy(RetrievalStrategy):
 
 
 class LLMRetrievalStrategy(RetrievalStrategy):
-    """LLM 檢索策略"""
+    """LLM 檢索策略 - 使用依賴注入的 LLMClient"""
     
-    def __init__(self):
-        self.llm_client = LLMClient()
+    def __init__(self, llm_client: LLMClient):
+        """
+        初始化 LLM 檢索策略
+        
+        Args:
+            llm_client: LLM 客戶端實例（通過依賴注入傳入，避免重複創建）
+        """
+        self.llm_client = llm_client
 
     async def retrieve(self, user_question: str, database_content: Dict[str, Any]) -> str:
         """使用 LLM 檢索方法（非 streaming）"""

@@ -128,50 +128,72 @@ class MedicalVectorStore(VectorStore):
     def __init__(self):
         """初始化醫療向量資料庫，使用適合醫療文本的嵌入模型"""
         super().__init__("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+        self._static_knowledge_loaded = False  # 標誌：靜態知識庫是否已加載
     
     def add_medical_documents(self, medical_data: Dict[str, Any] = None) -> None:
         """
         添加醫療資料到向量資料庫
         
         Args:
-            medical_data: 醫療資料字典，如果為 None 則讀取 /knowledge 目錄下的所有 JSON 文件
+            medical_data: 醫療資料字典，如果為 None 則讀取 /knowledge 目錄下的所有 JSON 文件（靜態知識庫）
+                         如果提供，則追加到現有索引中（用戶自定義知識庫）
         """
         import json
         from pathlib import Path
         
-        all_documents = []
-        
-        # 讀取 /knowledge 目錄下的所有 JSON 文件
-        knowledge_dir = Path("knowledge")
-        if not knowledge_dir.exists():
-            logger.warning("knowledge 目錄不存在")
-            return
+        # 處理靜態知識庫（knowledge/*.json）- 只加載一次
+        if medical_data is None:
+            if self._static_knowledge_loaded:
+                logger.info("靜態知識庫已加載，跳過重複加載")
+                return
             
-        json_files = list(knowledge_dir.glob("*.json"))
-        if not json_files:
-            logger.warning("knowledge 目錄下沒有找到 JSON 文件")
-            return
+            all_documents = []
             
-        logger.info(f"找到 {len(json_files)} 個 JSON 文件，開始處理...")
-        
-        for json_file in json_files:
-            try:
-                with open(json_file, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
+            # 讀取 /knowledge 目錄下的所有 JSON 文件
+            knowledge_dir = Path("knowledge")
+            if not knowledge_dir.exists():
+                logger.warning("knowledge 目錄不存在")
+                return
                 
-                documents = extract_medical_documents(data)
-                all_documents.extend(documents)
-                logger.info(f"成功處理 {json_file.name}，提取了 {len(documents)} 個文檔")
+            json_files = list(knowledge_dir.glob("*.json"))
+            if not json_files:
+                logger.warning("knowledge 目錄下沒有找到 JSON 文件")
+                return
                 
-            except Exception as e:
-                logger.error(f"處理文件 {json_file.name} 時發生錯誤: {str(e)}")
-                continue
+            logger.info(f"找到 {len(json_files)} 個 JSON 文件，開始處理靜態知識庫...")
+            
+            for json_file in json_files:
+                try:
+                    with open(json_file, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                    
+                    documents = extract_medical_documents(data)
+                    all_documents.extend(documents)
+                    logger.info(f"成功處理 {json_file.name}，提取了 {len(documents)} 個文檔")
+                    
+                except Exception as e:
+                    logger.error(f"處理文件 {json_file.name} 時發生錯誤: {str(e)}")
+                    continue
+            
+            if all_documents:
+                logger.info(f"總共提取了 {len(all_documents)} 個靜態文檔，開始添加到向量資料庫")
+                self.add_documents(all_documents)
+                self._static_knowledge_loaded = True
+                logger.info("靜態知識庫加載完成")
+            else:
+                logger.warning("沒有提取到任何文檔")
         
-        if all_documents:
-            logger.info(f"總共提取了 {len(all_documents)} 個文檔，開始添加到向量資料庫")
-            self.add_documents(all_documents)
         else:
-            logger.warning("沒有提取到任何文檔")
+            # 處理用戶提供的動態知識庫 - 允許追加
+            logger.info("處理用戶提供的動態知識庫內容...")
+            documents = extract_medical_documents(medical_data)
+            
+            if documents:
+                logger.info(f"提取了 {len(documents)} 個動態文檔，追加到向量資料庫")
+                self.add_documents(documents)
+                logger.info("動態知識庫內容已追加")
+            else:
+                logger.warning("用戶提供的知識庫中沒有提取到任何文檔")
     
     def cleanup(self):
         """清理向量存儲資源"""
@@ -180,6 +202,7 @@ class MedicalVectorStore(VectorStore):
             self.index = None
             self.documents = []
             self.metadata = []
+            self._static_knowledge_loaded = False  # 重置加載標誌
             logger.info("向量存儲資源已清理")
         except Exception as e:
             logger.error(f"清理向量存儲時發生錯誤: {e}")
