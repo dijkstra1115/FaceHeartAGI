@@ -173,6 +173,17 @@ class MedicalVectorStore(VectorStore):
         else:
             logger.warning("沒有提取到任何文檔")
     
+    def cleanup(self):
+        """清理向量存儲資源"""
+        try:
+            # 清空索引和文檔
+            self.index = None
+            self.documents = []
+            self.metadata = []
+            logger.info("向量存儲資源已清理")
+        except Exception as e:
+            logger.error(f"清理向量存儲時發生錯誤: {e}")
+    
     def search_medical_context(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
         """
         搜尋醫療相關內容

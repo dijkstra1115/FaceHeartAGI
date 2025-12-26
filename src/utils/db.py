@@ -10,7 +10,11 @@ DATABASE_URL = "sqlite:///./faceheart.db"
 # 建立 engine
 engine = create_engine(
     DATABASE_URL,
-    connect_args={"check_same_thread": False}
+    connect_args={"check_same_thread": False},
+    pool_size=10,  # 連接池大小
+    max_overflow=20,  # 超過pool_size後最多創建的連接數
+    pool_pre_ping=True,  # 使用前檢查連接是否有效
+    pool_recycle=3600  # 1小時後回收連接
 )
 
 # Session factory

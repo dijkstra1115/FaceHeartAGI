@@ -1,6 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import aiohttp
 import os
 from src.vector_store import MedicalVectorStore
@@ -13,6 +13,16 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
+# 全局單例向量存儲實例
+_vector_store_instance: Optional[MedicalVectorStore] = None
+
+def get_vector_store() -> MedicalVectorStore:
+    """獲取或創建單例向量存儲實例"""
+    global _vector_store_instance
+    if _vector_store_instance is None:
+        _vector_store_instance = MedicalVectorStore()
+    return _vector_store_instance
+
 
 class RetrievalStrategy(ABC):
     """檢索策略抽象基類"""
@@ -24,10 +34,11 @@ class RetrievalStrategy(ABC):
 
 
 class VectorRetrievalStrategy(RetrievalStrategy):
-    """向量檢索策略"""
+    """向量檢索策略 - 使用共享的向量存儲實例"""
     
     def __init__(self):
-        self.vector_store = MedicalVectorStore()
+        # 使用單例向量存儲
+        self.vector_store = get_vector_store()
     
     def retrieve(self, user_question: str, database_content: Dict[str, Any]) -> str:
         """使用向量檢索"""

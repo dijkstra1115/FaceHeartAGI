@@ -20,6 +20,30 @@ class LLMClient:
         
         self.base_url = os.getenv("LLM_BASE_URL", "http://localhost:8000/v1/chat/completions")
         self.model = os.getenv("LLM_DEFAULT_MODEL", "deepseek-qwen7b")
+        self._session: Optional[aiohttp.ClientSession] = None
+    
+    async def get_session(self) -> aiohttp.ClientSession:
+        """獲取或創建共享的 ClientSession"""
+        if self._session is None or self._session.closed:
+            # 配置連接池參數以優化資源使用
+            connector = aiohttp.TCPConnector(
+                limit=100,  # 最大連接數
+                limit_per_host=30,  # 每個主機的最大連接數
+                ttl_dns_cache=300,  # DNS 緩存時間
+                force_close=False,  # 保持連接以複用
+            )
+            timeout = aiohttp.ClientTimeout(total=300, connect=30, sock_read=60)
+            self._session = aiohttp.ClientSession(
+                connector=connector,
+                timeout=timeout
+            )
+        return self._session
+    
+    async def close(self):
+        """關閉 ClientSession"""
+        if self._session and not self._session.closed:
+            await self._session.close()
+            self._session = None
 
     async def generate_response_stream(self, messages: List[Dict[str, str]], max_tokens: int = None, temperature: float = 0.7) -> AsyncGenerator[str, None]:
         """
@@ -45,15 +69,16 @@ class LLMClient:
                 "stream": True
             }
             
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    url=self.base_url,
-                    json=payload
-                ) as response:
-                    if response.status != 200:
-                        error_text = await response.text()
-                        raise Exception(f"API 請求失敗: {response.status} - {error_text}")
-                    
+            session = await self.get_session()
+            async with session.post(
+                url=self.base_url,
+                json=payload
+            ) as response:
+                if response.status != 200:
+                    error_text = await response.text()
+                    raise Exception(f"API 請求失敗: {response.status} - {error_text}")
+                
+                try:
                     async for line in response.content:
                         line = line.decode('utf-8').strip()
                         if line.startswith('data: '):
@@ -68,7 +93,13 @@ class LLMClient:
                                         yield delta['content']
                             except json.JSONDecodeError:
                                 continue
-                                
+                except asyncio.CancelledError:
+                    # 客戶端斷開時，確保清理
+                    raise
+                            
+        except asyncio.CancelledError:
+            # 向上傳播取消異常
+            raise
         except Exception as e:
             raise Exception(f"LLM 異步串流回應生成失敗: {str(e)}")
 
@@ -96,20 +127,20 @@ class LLMClient:
                 "stream": False
             }
             
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    url=self.base_url,
-                    json=payload
-                ) as response:
-                    if response.status != 200:
-                        error_text = await response.text()
-                        raise Exception(f"API 請求失敗: {response.status} - {error_text}")
-                    
-                    response_data = await response.json()
-                    if 'choices' in response_data and len(response_data['choices']) > 0:
-                        return response_data['choices'][0]['message']['content']
-                    else:
-                        raise Exception("API 回應格式錯誤")
+            session = await self.get_session()
+            async with session.post(
+                url=self.base_url,
+                json=payload
+            ) as response:
+                if response.status != 200:
+                    error_text = await response.text()
+                    raise Exception(f"API 請求失敗: {response.status} - {error_text}")
+                
+                response_data = await response.json()
+                if 'choices' in response_data and len(response_data['choices']) > 0:
+                    return response_data['choices'][0]['message']['content']
+                else:
+                    raise Exception("API 回應格式錯誤")
                         
         except Exception as e:
             raise Exception(f"LLM 同步回應生成失敗: {str(e)}")

@@ -2,7 +2,8 @@ from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
-from typing import Dict, Any, Optional, List, AsyncGenerator
+from typing import Dict, Any, Optional, List, AsyncGenerator, Set
+from contextlib import asynccontextmanager
 import uvicorn
 import os
 from dotenv import load_dotenv
@@ -13,8 +14,9 @@ import asyncio
 import tempfile
 import uuid
 from pathlib import Path
+import signal
 
-from src.utils.db import init_db
+from src.utils.db import init_db, engine
 from src.rag_client import RAGClient
 from src.conversation_manager import ConversationManager
 from src.utils.data_parser import parser_fhir
@@ -40,11 +42,89 @@ init_db()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# 初始化 FastAPI 應用
+# 全局資源管理
+background_tasks: Set[asyncio.Task] = set()
+shutdown_event = asyncio.Event()
+
+def create_tracked_task(coro):
+    """創建被追踪的異步任務"""
+    task = asyncio.create_task(coro)
+    background_tasks.add(task)
+    task.add_done_callback(lambda t: background_tasks.discard(t))
+    return task
+
+# 優雅關閉處理
+async def shutdown_handler():
+    """處理優雅關閉流程"""
+    logger.info("收到關閉信號，開始優雅關閉...")
+    shutdown_event.set()
+    
+    # 1. 取消所有後台任務
+    if background_tasks:
+        logger.info(f"取消 {len(background_tasks)} 個後台任務...")
+        for task in background_tasks:
+            if not task.done():
+                task.cancel()
+        
+        # 等待所有任務完成或取消
+        await asyncio.gather(*background_tasks, return_exceptions=True)
+        logger.info("所有後台任務已清理")
+    
+    # 2. 關閉 LLM 客戶端的 HTTP 連接
+    try:
+        await conversation_manager.llm_client.close()
+        await rag_client.llm_client.close()
+        logger.info("LLM 客戶端連接已關閉")
+    except Exception as e:
+        logger.error(f"關閉 LLM 客戶端時發生錯誤: {e}")
+    
+    # 3. 清理向量存儲
+    try:
+        from src.retrieval_strategies import get_vector_store
+        vector_store = get_vector_store()
+        vector_store.cleanup()
+        logger.info("向量存儲已清理")
+    except Exception as e:
+        logger.error(f"清理向量存儲時發生錯誤: {e}")
+    
+    # 4. 關閉數據庫連接池
+    try:
+        engine.dispose()
+        logger.info("數據庫連接池已關閉")
+    except Exception as e:
+        logger.error(f"關閉數據庫連接池時發生錯誤: {e}")
+    
+    logger.info("優雅關閉完成")
+
+# Lifespan 事件處理器
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """應用生命週期管理"""
+    # Startup
+    logger.info("FaceHeartAGI API 正在啟動...")
+    
+    # 設置信號處理器（僅在非 Windows 系統或非 reload 模式下）
+    if os.name != 'nt' and not os.getenv("UVICORN_RELOAD"):
+        loop = asyncio.get_event_loop()
+        for sig in (signal.SIGTERM, signal.SIGINT):
+            loop.add_signal_handler(
+                sig, 
+                lambda s=sig: asyncio.create_task(shutdown_handler())
+            )
+        logger.info("信號處理器已設置")
+    
+    yield  # 應用運行期間
+    
+    # Shutdown
+    if not shutdown_event.is_set():
+        await shutdown_handler()
+
+# 初始化 FastAPI 應用（使用 lifespan）
 app = FastAPI(
     title="FaceHeartAGI API",
     description="FHIR 醫療資料分析與 RAG 增強 LLM 互動 API，支援異步串流模式",
-    version="3.0.0"
+    version="3.0.0",
+    lifespan=lifespan
 )
 
 # 添加 CORS 中間件
@@ -192,6 +272,9 @@ async def format_streaming_response(stream_generator: AsyncGenerator[str, None],
         
         chunk_count = 0
         async for chunk in stream_generator:
+            if shutdown_event.is_set():
+                logger.info("檢測到關閉信號，終止 streaming")
+                break
             if chunk is not None:
                 chunk_count += 1
                 # 發送內容片段
@@ -200,7 +283,12 @@ async def format_streaming_response(stream_generator: AsyncGenerator[str, None],
         # 發送結束標記
         yield f"event: end\ndata: {json.dumps({'type': response_type, 'message': f'{response_type} 完成', 'total_chunks': chunk_count}, ensure_ascii=False)}\n\n"
         
+    except asyncio.CancelledError:
+        logger.info(f"客戶端斷開連接，{response_type} streaming 被取消")
+        yield f"event: cancelled\ndata: {json.dumps({'message': '連接已取消'}, ensure_ascii=False)}\n\n"
+        raise
     except Exception as e:
+        logger.error(f"Streaming 過程中發生錯誤: {e}")
         # 發送錯誤信息
         yield f"event: error\ndata: {json.dumps({'error': str(e)}, ensure_ascii=False)}\n\n"
 
@@ -234,6 +322,7 @@ async def analyze_stream(request: MedicalAnalysisRequest):
     async def generate_streaming_analysis():
         full_response = ""  # 用於收集完整回應
         audio_id = None  # 語音文件ID
+        db_session = None  # 數據庫會話追蹤
         try:
             logger.info(f"收到醫療分析請求，會話ID: {request.device_id}, 問題: {request.user_question}")
             logger.info(f"檢索類型: {request.retrieval_type}")
@@ -257,6 +346,11 @@ async def analyze_stream(request: MedicalAnalysisRequest):
                 ),
                 "medical_analysis"
             ):
+                # 檢查關閉信號
+                if shutdown_event.is_set():
+                    logger.info("檢測到關閉信號，中止請求處理")
+                    break
+                    
                 # 收集回應內容用於記錄對話
                 if '"content"' in chunk:
                     try:
@@ -292,8 +386,7 @@ async def analyze_stream(request: MedicalAnalysisRequest):
                     yield f"event: audio_error\ndata: {json.dumps({'error': f'語音生成錯誤: {str(e)}'}, ensure_ascii=False)}\n\n"
             
             # 記錄完整的對話輪次
-            if full_response.strip():
-                
+            if full_response.strip() and not shutdown_event.is_set():
                 await conversation_manager.add_conversation_turn(
                     request.device_id,
                     request.user_question,
@@ -302,6 +395,11 @@ async def analyze_stream(request: MedicalAnalysisRequest):
                 )
                 
                 logger.info(f"已記錄會話 {request.device_id} 的對話輪次")
+        
+        except asyncio.CancelledError:
+            logger.info(f"請求被取消，會話ID: {request.device_id}")
+            yield f"event: cancelled\ndata: {json.dumps({'message': '請求已取消'}, ensure_ascii=False)}\n\n"
+            raise
                     
         except Exception as e:
             logger.error(f"醫療分析過程中發生錯誤: {str(e)}")

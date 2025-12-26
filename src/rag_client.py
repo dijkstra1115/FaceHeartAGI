@@ -73,6 +73,10 @@ class RAGClient:
             # 生成增強回應
             async for chunk in self._generate_enhanced_response_stream(user_question, fhir_data, retrieved_context, conversation_history):
                 yield chunk
+        
+        except asyncio.CancelledError:
+            logger.info("RAG 增強回應被取消")
+            raise
                 
         except Exception as e:
             logger.error(f"增強回應（streaming）過程中發生錯誤: {str(e)}")
