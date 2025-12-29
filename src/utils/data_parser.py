@@ -125,6 +125,21 @@ VITAL_SIGNS = {
 }
 
 
+def format_value(value: Any) -> str:
+    """
+    格式化數值為兩位小數，避免 LLM 記憶太多冗餘數據
+    
+    Args:
+        value: 原始數值（可以是 int, float 或其他類型）
+        
+    Returns:
+        格式化後的字符串（如果是數字則保留兩位小數，否則返回原值）
+    """
+    if isinstance(value, (int, float)):
+        return f"{value:.2f}"
+    return str(value)
+
+
 def get_patient_id(observation):
     ref = observation.get("subject", {}).get("reference", "")
     return ref.replace("Patient/", "") if ref else "Unknown"
@@ -149,7 +164,8 @@ def get_all_components(observation):
                 value = comp.get("valueQuantity", {}).get("value")
                 unit = comp.get("valueQuantity", {}).get("unit", "")
                 if value is not None:
-                    results.append(f"{label}: {value} {unit}")
+                    formatted_value = format_value(value)
+                    results.append(f"{label}: {formatted_value} {unit}")
     return results
 
 
@@ -198,6 +214,9 @@ def parser_fhir(bundle: Dict[str, Any]) -> str:
             label = coding.get('display', coding.get('code', 'Unknown'))
             qty = comp.get('valueQuantity', {})
             val = qty.get('value', 'N/A')
+            # 格式化數值為兩位小數
+            if val != 'N/A' and isinstance(val, (int, float)):
+                val = format_value(val)
             unit = qty.get('unit', '')
             lines.append(f"- {label}: {val} {unit}")
 

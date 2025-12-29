@@ -40,7 +40,8 @@ class RAGClient:
             return retrieval_strategy.retrieve(user_question, database_content)
     
     async def enhance_response_with_rag_stream(self, user_question: str, fhir_data: str, 
-                                             database_content: Dict[str, Any], retrieval_type: str, conversation_history: str = "") -> AsyncGenerator[str, None]:
+                                             database_content: Dict[str, Any], retrieval_type: str, conversation_history: str = "",
+                                             require_retrieval: bool = False, enable_conversation_history: bool = True) -> AsyncGenerator[str, None]:
         """
         使用 RAG 增強回應（streaming 模式）
         
@@ -50,6 +51,8 @@ class RAGClient:
             database_content: 資料庫內容
             retrieval_type: The retrieval type to use.
             conversation_history: 對話歷史（可選）
+            require_retrieval: 是否必須檢索到資料（若為 True 且未檢索到資料則回報錯誤）
+            enable_conversation_history: 是否啟用歷史對話功能（若為 False 且未檢索到資料則回報錯誤）
             
         Yields:
             增強回應的文字片段
@@ -65,14 +68,33 @@ class RAGClient:
             retrieved_context = await self.retrieve_relevant_context(retrieval_strategy, user_question, database_content)
             
             if not retrieved_context or retrieved_context.strip() == "No relevant content retrieved.":
-                logger.info("未找到相關的資料庫內容，將直接生成回應")
+                # 如果設定必須檢索，則回報錯誤
+                if require_retrieval:
+                    logger.warning("未找到相關的資料庫內容，且設定為必須檢索模式")
+                    yield "錯誤：未能從知識庫中檢索到相關資料。請確認您的問題是否與知識庫內容相關，或嘗試調整問題的表述方式。"
+                    return
+                
+                # 如果歷史對話功能已停用，則必須要有檢索資料才能回應
+                if not enable_conversation_history:
+                    logger.warning("未找到相關的資料庫內容，且歷史對話功能已停用，無法生成回應")
+                    yield "錯誤：未能從知識庫中檢索到相關資料。由於歷史對話功能已停用，系統需要檢索資料才能回應。請確認您的問題是否與知識庫內容相關，或嘗試調整問題的表述方式。"
+                    return
+                
+                # 歷史對話功能已啟用，可以使用歷史對話生成回應
+                logger.info("未找到相關的資料庫內容，將使用歷史對話生成回應")
                 async for chunk in self._generate_base_response_stream(user_question, fhir_data, conversation_history):
                     yield chunk
                 return
             
-            # 生成增強回應
-            async for chunk in self._generate_enhanced_response_stream(user_question, fhir_data, retrieved_context, conversation_history):
-                yield chunk
+            # 根據是否有歷史對話選擇生成方法
+            if conversation_history and conversation_history.strip() != "None":
+                # 有歷史對話，使用增強回應
+                async for chunk in self._generate_enhanced_response_stream(user_question, fhir_data, retrieved_context, conversation_history):
+                    yield chunk
+            else:
+                # 無歷史對話，僅使用檢索資料
+                async for chunk in self._generate_retrieval_only_response_stream(user_question, fhir_data, retrieved_context):
+                    yield chunk
         
         except asyncio.CancelledError:
             logger.info("RAG 增強回應被取消")
@@ -126,6 +148,32 @@ class RAGClient:
         ]
         
         logger.info("開始生成增強回應（streaming）...")
+        async for chunk in self.llm_client.generate_response_stream(
+            messages, 
+            max_tokens=int(os.getenv("LLM_DEFAULT_MAX_TOKENS", 2000)), 
+            temperature=float(os.getenv("LLM_ENHANCEMENT_TEMPERATURE", 0.3))
+        ):
+            yield chunk
+    
+    async def _generate_retrieval_only_response_stream(self, user_question: str, fhir_data: str, 
+                                                      retrieved_context: str) -> AsyncGenerator[str, None]:
+        """生成僅基於檢索資料的回應（無歷史對話，streaming 模式）"""
+        retrieval_only_prompt = PromptBuilder.build_retrieval_only_prompt(
+            user_question, fhir_data, retrieved_context
+        )
+        
+        messages = [
+            {
+                "role": "system",
+                "content": PromptBuilder.get_system_prompt("retrieval_only")
+            },
+            {
+                "role": "user",
+                "content": retrieval_only_prompt
+            }
+        ]
+        
+        logger.info("開始生成僅檢索資料回應（無歷史對話，streaming）...")
         async for chunk in self.llm_client.generate_response_stream(
             messages, 
             max_tokens=int(os.getenv("LLM_DEFAULT_MAX_TOKENS", 2000)), 

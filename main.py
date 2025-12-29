@@ -140,6 +140,13 @@ app.add_middleware(
 rag_client = RAGClient()
 conversation_manager = ConversationManager()
 
+# 讀取對話管理相關環境變數
+ENABLE_CONVERSATION_HISTORY = os.getenv("ENABLE_CONVERSATION_HISTORY", "true").lower() == "true"
+REQUIRE_RETRIEVAL = os.getenv("REQUIRE_RETRIEVAL", "false").lower() == "true"
+
+logger.info(f"對話歷史功能: {'已啟用' if ENABLE_CONVERSATION_HISTORY else '已停用'}")
+logger.info(f"必須檢索模式: {'已啟用' if REQUIRE_RETRIEVAL else '已停用'}")
+
 def load_default_knowledge_base():
     """載入預設知識庫"""
     try:
@@ -333,7 +340,13 @@ async def analyze_stream(request: MedicalAnalysisRequest):
 
             fhir = parser_fhir(json.loads(request.fhir_data)) if request.fhir_data else ""
 
-            conversation_history = conversation_manager.format_conversation_history_for_prompt(request.device_id)
+            # 根據環境變數決定是否載入歷史對話
+            conversation_history = ""
+            if ENABLE_CONVERSATION_HISTORY:
+                conversation_history = conversation_manager.format_conversation_history_for_prompt(request.device_id)
+                logger.info(f"歷史對話功能已啟用，載入會話 {request.device_id} 的歷史對話")
+            else:
+                logger.info("歷史對話功能已停用")
                         
             # 直接使用 RAG 串流增強生成回應
             async for chunk in format_streaming_response(
@@ -342,7 +355,9 @@ async def analyze_stream(request: MedicalAnalysisRequest):
                     fhir,
                     knowledge_base,
                     request.retrieval_type,
-                    conversation_history
+                    conversation_history,
+                    require_retrieval=REQUIRE_RETRIEVAL,
+                    enable_conversation_history=ENABLE_CONVERSATION_HISTORY
                 ),
                 "medical_analysis"
             ):
@@ -385,8 +400,8 @@ async def analyze_stream(request: MedicalAnalysisRequest):
                     logger.error(f"語音生成過程中發生錯誤: {e}")
                     yield f"event: audio_error\ndata: {json.dumps({'error': f'語音生成錯誤: {str(e)}'}, ensure_ascii=False)}\n\n"
             
-            # 記錄完整的對話輪次
-            if full_response.strip() and not shutdown_event.is_set():
+            # 記錄完整的對話輪次（僅在啟用歷史對話時）
+            if ENABLE_CONVERSATION_HISTORY and full_response.strip() and not shutdown_event.is_set():
                 await conversation_manager.add_conversation_turn(
                     request.device_id,
                     request.user_question,

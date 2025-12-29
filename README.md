@@ -29,6 +29,11 @@ FHIR 醫療資料分析與 RAG 增強 LLM 互動 API，支援異步串流模式�
 - **預設知識庫模板**：內建醫療知識庫，無需額外設定
 - **簡化 API 接口**：統一的請求格式，易於使用
 - **FastAPI 測試**：所有測試均使用 FastAPI 接口
+- **彈性對話管理**：可透過環境變數啟用/停用歷史對話功能
+- **三種回覆模式**：
+  1. 有檢索資料與歷史對話
+  2. 只有歷史對話
+  3. 只有檢索資料（無歷史對話）
 
 ## 📋 功能特點
 
@@ -39,6 +44,8 @@ FHIR 醫療資料分析與 RAG 增強 LLM 互動 API，支援異步串流模式�
 - 健康建議生成
 - 對話歷史記錄與摘要
 - LLM 能參考歷史對話內容，提供連貫回應
+- 可選擇性啟用歷史對話功能
+- 必須檢索模式：若檢索不到資料可選擇回報錯誤
 
 ## 🛠️ 安裝與設定
 
@@ -58,10 +65,30 @@ pip install -r requirements.txt
 cp env.example .env
 ```
 
-編輯 `.env` 檔案，設定您的 OpenRouter API 金鑰：
+編輯 `.env` 檔案，設定您的 OpenRouter API 金鑰及其他設定：
 ```
 OPENROUTER_API_KEY=your_api_key_here
+
+# 對話管理設定
+ENABLE_CONVERSATION_HISTORY=true  # 是否啟用歷史對話功能 (true/false)
+REQUIRE_RETRIEVAL=false  # 是否必須檢索到資料才回應 (true/false)
 ```
+
+#### 環境變數說明
+
+**對話管理設定：**
+- `ENABLE_CONVERSATION_HISTORY`: 
+  - `true` (預設): 啟用歷史對話功能，LLM 會參考之前的對話內容
+  - `false`: 停用歷史對話功能，每次請求獨立處理
+  
+- `REQUIRE_RETRIEVAL`:
+  - `true`: 必須從知識庫檢索到相關資料才會回應，若檢索不到會回報錯誤
+  - `false` (預設): 若檢索不到資料，LLM 仍會基於 FHIR 數據和歷史對話回應
+
+**三種回覆模式：**
+1. **有檢索資料與歷史對話** (`ENABLE_CONVERSATION_HISTORY=true`, 且成功檢索到資料)
+2. **只有歷史對話** (`ENABLE_CONVERSATION_HISTORY=true`, 但未檢索到資料且 `REQUIRE_RETRIEVAL=false`)
+3. **只有檢索資料** (`ENABLE_CONVERSATION_HISTORY=false`, 且成功檢索到資料)
 
 ### 4. 啟動服務
 ```bash
@@ -187,11 +214,12 @@ data: {"type": "medical_analysis", "message": "medical_analysis 完成", "total_
 ## 💬 對話記錄功能
 
 - 會話ID：每個對話會話需要提供唯一的 `session_id`
-- 自動記錄：系統自動記錄每輪對話的用戶問題和系統回應
+- 自動記錄：系統自動記錄每輪對話的用戶問題和系統回應（僅在啟用歷史對話時）
 - 時間戳記：每輪對話都包含精確的時間戳記
 - 智能摘要：每5輪對話自動生成摘要，僅保留最近10輪
 - 歷史對話參考：LLM能夠參考之前的對話內容，提供連貫性回應
 - 資料匯出：支援完整對話記錄的 JSON 格式匯出（如需可自行擴充）
+- 彈性控制：可透過環境變數 `ENABLE_CONVERSATION_HISTORY` 啟用/停用此功能
 
 ## 🔧 檢索類型
 
@@ -242,6 +270,10 @@ FaceHeartAGI/
 - ✅ 新增會話管理系統
 - ✅ 新增對話匯出功能
 - ✅ 新增LLM歷史對話參考功能
+- ✅ 新增環境變數控制歷史對話功能
+- ✅ 新增三種回覆模式支援
+- ✅ 新增必須檢索模式 (可選)
+- ✅ FHIR 數值格式化為兩位小數
 
 ### 移除的功能
 - ❌ 非串流回應端點

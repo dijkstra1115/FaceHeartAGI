@@ -66,6 +66,25 @@ Your goal is to answer user questions accurately and concisely using only the pr
 4. Maintain a professional and factual tone — no speculation or advice.
 """,
 
+        "retrieval_only": """### SYSTEM ROLE ###
+You are a **medical knowledge consultant** specializing in medical information retrieval and analysis.
+Your task is to answer the user's question using **only** the provided FHIR data and retrieved medical knowledge.
+
+### HARD RULES (Strict Priority) ###
+1. Do **not** guess, infer, or hallucinate.
+2. Use only information present in these sections:
+   - <fhir_data>
+   - <retrieved_knowledge>
+   - <user_question>
+3. Respond **in English only.**
+4. If the available data is insufficient or ambiguous, do not fabricate an answer. Instead, ask the user to provide the additional information needed to proceed accurately.
+5. Do not include reasoning steps or meta commentary in the output.
+
+### EVIDENCE USE POLICY ###
+- Prefer **FHIR data** for patient-specific facts. Use **retrieved knowledge** for definitions, criteria, thresholds, or general medical guidance.
+- When **retrieved knowledge** contains relevant items, **you must incorporate them** into the answer.
+""",
+
         "summary": """### SYSTEM ROLE ###
 You are a **clinical conversation summarization assistant**.
 Your task is to produce concise summaries capturing user intent, health trends, and system responses.
@@ -185,11 +204,11 @@ Now analyze the inputs and produce your response following the required format a
     # =============================
     @staticmethod
     def build_base_prompt(user_question: str, fhir_data: str, conversation_history: str = "") -> str:
-        history_section = f"<conversation_history>\n{conversation_history}\n</conversation_history>" if conversation_history else "<conversation_history />"
-
         prompt = f"""\
 ### INPUTS ###
-{history_section}
+<conversation_history>
+{conversation_history or "None"}
+</conversation_history>
 
 <user_question>
 {user_question}
@@ -206,6 +225,56 @@ Answer the user's question using **only** the FHIR data and (if present) convers
 """
         return prompt
 
+    # =============================
+    # Retrieval Only Prompt (無歷史對話)
+    # =============================
+    @staticmethod
+    def build_retrieval_only_prompt(user_question: str, fhir_data: str, retrieved_context: str) -> str:
+        prompt = f"""\
+### INPUTS ###
+<fhir_data>
+{fhir_data}
+</fhir_data>
+
+<retrieved_knowledge>
+{retrieved_context}
+</retrieved_knowledge>
+
+<user_question>
+{user_question}
+</user_question>
+
+---
+
+### OUTPUT REQUIREMENTS ###
+Direct, concise answer based only on available evidence from FHIR data and retrieved knowledge.
+
+---
+
+### EXAMPLES (Few-Shot Guidance) ###
+# Example 1 – Using FHIR data
+Inputs: Systolic BP: 145.00 mmHg, Diastolic BP: 92.00 mmHg
+Question: "Is my blood pressure normal?"
+Retrieved Knowledge: Normal blood pressure is typically below 120/80 mmHg. Hypertension is diagnosed at 130/80 mmHg or higher.
+Output:
+The patient's blood pressure (145/92 mmHg) is elevated and falls within the hypertension range. Normal blood pressure is typically below 120/80 mmHg.
+
+# Example 2 – Using retrieved knowledge
+Question: "What are the risk factors for diabetes?"
+Retrieved Knowledge: 
+- Diabetes risk factor: Obesity
+- Diabetes risk factor: Family history
+- Diabetes risk factor: Physical inactivity
+Output:
+Major risk factors for diabetes include obesity, family history of diabetes, and physical inactivity.
+
+---
+
+### FINAL TASK ###
+Now analyze the inputs and produce your response following the required format and rules above.
+"""
+        return prompt
+    
     # =============================
     # Summary Prompt
     # =============================
