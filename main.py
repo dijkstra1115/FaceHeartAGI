@@ -400,8 +400,8 @@ async def analyze_stream(request: MedicalAnalysisRequest):
                     logger.error(f"語音生成過程中發生錯誤: {e}")
                     yield f"event: audio_error\ndata: {json.dumps({'error': f'語音生成錯誤: {str(e)}'}, ensure_ascii=False)}\n\n"
             
-            # 記錄完整的對話輪次（僅在啟用歷史對話時）
-            if ENABLE_CONVERSATION_HISTORY and full_response.strip() and not shutdown_event.is_set():
+            # 記錄完整的對話輪次（總是記錄，但只有在啟用歷史對話時才會傳遞給 LLM）
+            if full_response.strip() and not shutdown_event.is_set():
                 await conversation_manager.add_conversation_turn(
                     request.device_id,
                     request.user_question,
@@ -409,7 +409,8 @@ async def analyze_stream(request: MedicalAnalysisRequest):
                     fhir
                 )
                 
-                logger.info(f"已記錄會話 {request.device_id} 的對話輪次")
+                logger.info(f"已記錄會話 {request.device_id} 的對話輪次" + 
+                          (f"（歷史對話功能已{'啟用' if ENABLE_CONVERSATION_HISTORY else '停用'}，{'會' if ENABLE_CONVERSATION_HISTORY else '不會'}傳遞給 LLM）"))
         
         except asyncio.CancelledError:
             logger.info(f"請求被取消，會話ID: {request.device_id}")

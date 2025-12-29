@@ -214,12 +214,14 @@ data: {"type": "medical_analysis", "message": "medical_analysis 完成", "total_
 ## 💬 對話記錄功能
 
 - 會話ID：每個對話會話需要提供唯一的 `session_id`
-- 自動記錄：系統自動記錄每輪對話的用戶問題和系統回應（僅在啟用歷史對話時）
+- 自動記錄：系統**總是**自動記錄每輪對話的用戶問題和系統回應（無論是否啟用歷史對話功能）
 - 時間戳記：每輪對話都包含精確的時間戳記
 - 智能摘要：每5輪對話自動生成摘要，僅保留最近10輪
-- 歷史對話參考：LLM能夠參考之前的對話內容，提供連貫性回應
+- 歷史對話參考：當 `ENABLE_CONVERSATION_HISTORY=true` 時，LLM 能夠參考之前的對話內容，提供連貫性回應
 - 資料匯出：支援完整對話記錄的 JSON 格式匯出（如需可自行擴充）
-- 彈性控制：可透過環境變數 `ENABLE_CONVERSATION_HISTORY` 啟用/停用此功能
+- 彈性控制：可透過環境變數 `ENABLE_CONVERSATION_HISTORY` 控制是否將歷史對話傳遞給 LLM
+  - `true`：對話記錄會傳遞給 LLM，LLM 可參考歷史對話
+  - `false`：對話記錄仍會保存，但不會傳遞給 LLM
 
 ## 🔧 檢索類型
 
