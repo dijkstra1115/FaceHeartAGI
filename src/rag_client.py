@@ -48,33 +48,49 @@ class RAGClient:
             ]
             
             logger.info("開始分類問題類型...")
+            logger.info(f"🔍 [DEBUG] 分類器輸入問題: {user_question}")
+            
             # 分類器使用較低的 temperature 和較少的 tokens，因為只需要返回 JSON
-            response = await self.llm_client.generate_response(
+            raw_response = await self.llm_client.generate_response(
                 messages,
                 max_tokens=50,  # 分類器只需要很少的 tokens
                 temperature=0.1  # 低 temperature 確保穩定的分類結果
             )
             
+            logger.info(f"🔍 [DEBUG] 分類器原始響應: {repr(raw_response)}")
+            
             # 解析 JSON 響應
             try:
                 # 嘗試提取 JSON（可能包含 markdown 代碼塊或其他文本）
-                response = response.strip()
-                # 移除可能的 markdown 代碼塊標記
-                if response.startswith("```"):
-                    lines = response.split("\n")
-                    response = "\n".join(lines[1:-1]) if len(lines) > 2 else response
-                elif "```json" in response:
-                    response = response.split("```json")[1].split("```")[0].strip()
+                cleaned_response = raw_response.strip()
+                logger.info(f"🔍 [DEBUG] 清理後的響應: {repr(cleaned_response)}")
                 
-                result = json.loads(response)
+                # 移除可能的 markdown 代碼塊標記
+                if cleaned_response.startswith("```"):
+                    lines = cleaned_response.split("\n")
+                    cleaned_response = "\n".join(lines[1:-1]) if len(lines) > 2 else cleaned_response
+                    logger.info(f"🔍 [DEBUG] 移除 markdown 代碼塊後: {repr(cleaned_response)}")
+                elif "```json" in cleaned_response:
+                    cleaned_response = cleaned_response.split("```json")[1].split("```")[0].strip()
+                    logger.info(f"🔍 [DEBUG] 提取 JSON 代碼塊後: {repr(cleaned_response)}")
+                
+                result = json.loads(cleaned_response)
+                logger.info(f"🔍 [DEBUG] 解析後的 JSON 結果: {result}")
+                
                 question_type = result.get("question_type", "medical_question")
-                logger.info(f"問題分類結果: {question_type}")
+                logger.info(f"✅ 問題分類結果: {question_type}")
                 return question_type
             except json.JSONDecodeError as e:
-                logger.warning(f"無法解析分類器 JSON 響應: {response}, 錯誤: {e}")
+                logger.warning(f"⚠️ 無法解析分類器 JSON 響應")
+                logger.warning(f"🔍 [DEBUG] 原始響應: {repr(raw_response)}")
+                if 'cleaned_response' in locals():
+                    logger.warning(f"🔍 [DEBUG] 清理後響應: {repr(cleaned_response)}")
+                logger.warning(f"🔍 [DEBUG] JSON 解析錯誤: {e}")
                 # 如果無法解析，嘗試從文本中提取
-                if "meta_question" in response.lower():
+                if "meta_question" in raw_response.lower():
+                    logger.info("✅ 從文本中提取到 meta_question，返回 meta_question")
                     return "meta_question"
+                logger.info("✅ 無法確定類型，默認返回 medical_question")
                 return "medical_question"  # 默認返回醫療問題
                 
         except Exception as e:
