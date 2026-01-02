@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import json
 from typing import Dict, Any, Optional, AsyncGenerator
 from dotenv import load_dotenv
 import os
@@ -21,6 +22,65 @@ class RAGClient:
         """
         # 初始化 LLM 客戶端
         self.llm_client = LLMClient()
+    
+    async def _classify_question(self, user_question: str) -> str:
+        """
+        分類用戶問題類型
+        
+        Args:
+            user_question: 用戶問題
+            
+        Returns:
+            問題類型 ("meta_question" 或 "medical_question")
+        """
+        try:
+            classifier_prompt = PromptBuilder.build_question_classifier_prompt(user_question)
+            
+            messages = [
+                {
+                    "role": "system",
+                    "content": PromptBuilder.get_system_prompt("question_classifier")
+                },
+                {
+                    "role": "user",
+                    "content": classifier_prompt
+                }
+            ]
+            
+            logger.info("開始分類問題類型...")
+            # 分類器使用較低的 temperature 和較少的 tokens，因為只需要返回 JSON
+            response = await self.llm_client.generate_response(
+                messages,
+                max_tokens=50,  # 分類器只需要很少的 tokens
+                temperature=0.1  # 低 temperature 確保穩定的分類結果
+            )
+            
+            # 解析 JSON 響應
+            try:
+                # 嘗試提取 JSON（可能包含 markdown 代碼塊或其他文本）
+                response = response.strip()
+                # 移除可能的 markdown 代碼塊標記
+                if response.startswith("```"):
+                    lines = response.split("\n")
+                    response = "\n".join(lines[1:-1]) if len(lines) > 2 else response
+                elif "```json" in response:
+                    response = response.split("```json")[1].split("```")[0].strip()
+                
+                result = json.loads(response)
+                question_type = result.get("question_type", "medical_question")
+                logger.info(f"問題分類結果: {question_type}")
+                return question_type
+            except json.JSONDecodeError as e:
+                logger.warning(f"無法解析分類器 JSON 響應: {response}, 錯誤: {e}")
+                # 如果無法解析，嘗試從文本中提取
+                if "meta_question" in response.lower():
+                    return "meta_question"
+                return "medical_question"  # 默認返回醫療問題
+                
+        except Exception as e:
+            logger.error(f"分類問題時發生錯誤: {str(e)}")
+            # 發生錯誤時默認返回醫療問題，確保系統繼續運行
+            return "medical_question"
     
     async def retrieve_relevant_context(self, retrieval_strategy: RetrievalStrategy, user_question: str, database_content: Dict[str, Any]) -> str:
         """
@@ -45,6 +105,12 @@ class RAGClient:
         """
         使用 RAG 增強回應（streaming 模式）
         
+        流程：
+        1. 第一層：問題分類器判斷問題類型
+        2. 第二層：根據分類結果選擇不同的處理流程
+           - meta_question: 使用元問題專用 prompt（跳過檢索）
+           - medical_question: 使用現有的 RAG 流程
+        
         Args:
             user_question: 用戶問題
             fhir_data: FHIR 資料
@@ -58,6 +124,25 @@ class RAGClient:
             增強回應的文字片段
         """
         try:
+            # =============================
+            # 第一層：問題分類器
+            # =============================
+            question_type = await self._classify_question(user_question)
+            logger.info(f"問題分類結果: {question_type}")
+            
+            # =============================
+            # 第二層：根據分類結果路由
+            # =============================
+            if question_type == "meta_question":
+                # 元問題：跳過檢索，直接使用 FHIR 數據生成回應
+                logger.info("檢測到元問題，使用元問題專用處理流程")
+                async for chunk in self._generate_meta_question_response_stream(fhir_data):
+                    yield chunk
+                return
+            
+            # 醫療問題：使用現有的 RAG 流程
+            logger.info("檢測到醫療問題，使用標準 RAG 處理流程")
+            
             # 根據檢索類型設定 RAG 客戶端（使用依賴注入避免重複創建 LLMClient）
             if retrieval_type == "llm":
                 retrieval_strategy = LLMRetrievalStrategy(self.llm_client)
@@ -177,6 +262,38 @@ class RAGClient:
         async for chunk in self.llm_client.generate_response_stream(
             messages, 
             max_tokens=int(os.getenv("LLM_DEFAULT_MAX_TOKENS", 2000)), 
+            temperature=float(os.getenv("LLM_ENHANCEMENT_TEMPERATURE", 0.3))
+        ):
+            yield chunk
+    
+    async def _generate_meta_question_response_stream(self, fhir_data: str) -> AsyncGenerator[str, None]:
+        """
+        生成元問題回應（streaming 模式）
+        用於回答 "what questions can you answer?" 等問題
+        
+        Args:
+            fhir_data: FHIR 資料
+            
+        Yields:
+            回應的文字片段
+        """
+        meta_question_prompt = PromptBuilder.build_meta_question_prompt(fhir_data)
+        
+        messages = [
+            {
+                "role": "system",
+                "content": PromptBuilder.get_system_prompt("meta_question")
+            },
+            {
+                "role": "user",
+                "content": meta_question_prompt
+            }
+        ]
+        
+        logger.info("開始生成元問題回應（streaming）...")
+        async for chunk in self.llm_client.generate_response_stream(
+            messages,
+            max_tokens=int(os.getenv("LLM_DEFAULT_MAX_TOKENS", 2000)),
             temperature=float(os.getenv("LLM_ENHANCEMENT_TEMPERATURE", 0.3))
         ):
             yield chunk 

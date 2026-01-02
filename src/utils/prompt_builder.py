@@ -94,6 +94,71 @@ Your task is to produce concise summaries capturing user intent, health trends, 
 2. Do not invent or infer information.
 3. Summaries must be concise, clear, and in **English**.
 4. Each summary section (Intent / Health / Response) must have ≤3 bullet points.
+""",
+
+        "question_classifier": """### SYSTEM ROLE ###
+You are a **question classification specialist** for a medical AI assistant.
+Your task is to classify user questions into specific categories based on their intent.
+
+### RULES ###
+1. Analyze the user's question and determine its primary intent.
+2. Respond **only** with a valid JSON object, no additional text.
+3. Use the exact question_type values defined below.
+4. If uncertain, default to "medical_question".
+
+### QUESTION TYPES ###
+- "meta_question": Questions about what the system can do, what questions can be asked, or system capabilities (e.g., "what questions can you answer?", "what can you help me with?", "what information do you have?")
+- "medical_question": All other medical-related questions about symptoms, conditions, test results, treatments, etc.
+
+### OUTPUT FORMAT ###
+Respond with a JSON object in this exact format:
+{
+  "question_type": "meta_question" | "medical_question"
+}
+
+### EXAMPLES ###
+Question: "what questions can you answer?"
+Output: {"question_type": "meta_question"}
+
+Question: "What are the symptoms of diabetes?"
+Output: {"question_type": "medical_question"}
+
+Question: "Is my blood pressure normal?"
+Output: {"question_type": "medical_question"}
+
+Question: "what can you help me with?"
+Output: {"question_type": "meta_question"}
+""",
+
+        "meta_question": """### SYSTEM ROLE ###
+You are a **medical AI assistant** specialized in explaining system capabilities based on available FHIR data.
+Your task is to inform users about what types of questions they can ask based on the medical data available.
+
+### RULES ###
+1. Analyze the <fhir_data> section to identify which medical fields are actually present.
+2. List **only** the fields that exist in the FHIR data.
+3. Also mention general topics available from the knowledge base.
+4. Use a structured, professional format.
+5. Respond **in English only**.
+6. Do not include reasoning steps or meta commentary.
+
+### OUTPUT FORMAT ###
+Use this structure:
+"The user can ask questions about their medical history, such as [list actual FHIR fields present]. They can also inquire about [knowledge base topics like hypertension awareness rates, stress management techniques, or atrial fibrillation management]. However, specific questions about current medical concerns (e.g., high BP readings) cannot be answered without more context."
+
+### FIELD MAPPING ###
+When identifying fields from FHIR data, use these common terms:
+- BMI → "BMI"
+- Heart rate → "heart rate"
+- Respiratory rate → "respiratory rate"
+- Oxygen saturation → "oxygen saturation"
+- Systolic/Diastolic blood pressure → "blood pressure"
+- HbA1c → "HbA1c" (if present)
+- Cholesterol → "cholesterol" (if present)
+- ECG results → "ECG results" (if present)
+- Any lab values → "lab values" (if present)
+
+Only mention fields that are actually present in the FHIR data.
 """
     }
 
@@ -324,5 +389,87 @@ Rules:
 - Each section ≤3 concise bullet points.
 - Respond **in English only**.
 - Do not add information not found in the input records.
+"""
+        return prompt
+    
+    # =============================
+    # Question Classifier Prompt
+    # =============================
+    @staticmethod
+    def build_question_classifier_prompt(user_question: str) -> str:
+        """
+        構建問題分類器 prompt
+        
+        Args:
+            user_question: 用戶問題
+            
+        Returns:
+            分類器 prompt
+        """
+        prompt = f"""### INPUTS ###
+<user_question>
+{user_question}
+</user_question>
+
+---
+
+### TASK ###
+Classify the user's question into one of the defined question types.
+
+### OUTPUT FORMAT ###
+Respond with a JSON object in this exact format:
+{{
+  "question_type": "meta_question" | "medical_question"
+}}
+
+### REMINDER ###
+- "meta_question": Questions about system capabilities (what can you answer, what can you help with, etc.)
+- "medical_question": All other medical-related questions
+- If uncertain, default to "medical_question"
+- Respond **only** with the JSON object, no additional text.
+"""
+        return prompt
+    
+    # =============================
+    # Meta Question Prompt
+    # =============================
+    @staticmethod
+    def build_meta_question_prompt(fhir_data: str) -> str:
+        """
+        構建元問題專用 prompt（用於回答 "what questions can you answer?" 等問題）
+        
+        Args:
+            fhir_data: FHIR 資料
+            
+        Returns:
+            元問題 prompt
+        """
+        prompt = f"""### INPUTS ###
+<fhir_data>
+{fhir_data}
+</fhir_data>
+
+---
+
+### TASK ###
+Based on the FHIR data provided, inform the user about what types of questions they can ask.
+
+### REQUIREMENTS ###
+1. Analyze the FHIR data to identify which medical fields are actually present.
+2. List only the fields that exist in the data (e.g., blood pressure, heart rate, oxygen saturation, HbA1c, cholesterol, ECG results).
+3. Also mention general topics available from the knowledge base (e.g., hypertension awareness rates, stress management techniques, atrial fibrillation management).
+4. Use the specified output format.
+
+### OUTPUT FORMAT ###
+The user can ask questions about their medical history, such as [list actual FHIR fields present]. However, specific questions about current medical concerns (e.g., high BP readings) cannot be answered without more context.
+
+### EXAMPLES ###
+If FHIR data contains: BMI, Heart rate, Blood pressure, Oxygen saturation
+Output should include: "blood pressure, heart rate, oxygen saturation, BMI"
+
+If FHIR data contains: Blood pressure, HbA1c, Cholesterol
+Output should include: "blood pressure, lab values (HbA1c, cholesterol)"
+
+Only mention fields that are actually present in the FHIR data above.
 """
         return prompt
