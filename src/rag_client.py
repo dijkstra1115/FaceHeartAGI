@@ -53,7 +53,7 @@ class RAGClient:
             # 分類器使用較低的 temperature 和較少的 tokens，因為只需要返回 JSON
             raw_response = await self.llm_client.generate_response(
                 messages,
-                max_tokens=50,  # 分類器只需要很少的 tokens
+                max_tokens=1000,  # 分類器只需要很少的 tokens
                 temperature=0.1  # 低 temperature 確保穩定的分類結果
             )
             
