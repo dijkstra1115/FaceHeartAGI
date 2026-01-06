@@ -103,15 +103,15 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("FaceHeartAGI API 正在啟動...")
     
-    # 設置信號處理器（僅在非 Windows 系統或非 reload 模式下）
-    if os.name != 'nt' and not os.getenv("UVICORN_RELOAD"):
-        loop = asyncio.get_event_loop()
-        for sig in (signal.SIGTERM, signal.SIGINT):
-            loop.add_signal_handler(
-                sig, 
-                lambda s=sig: asyncio.create_task(shutdown_handler())
-            )
-        logger.info("信號處理器已設置")
+    # # 設置信號處理器（僅在非 Windows 系統或非 reload 模式下）
+    # if os.name != 'nt' and not os.getenv("UVICORN_RELOAD"):
+    #     loop = asyncio.get_event_loop()
+    #     for sig in (signal.SIGTERM, signal.SIGINT):
+    #         loop.add_signal_handler(
+    #             sig, 
+    #             lambda s=sig: asyncio.create_task(shutdown_handler())
+    #         )
+    #     logger.info("信號處理器已設置")
     
     yield  # 應用運行期間
     
