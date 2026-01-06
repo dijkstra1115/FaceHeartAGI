@@ -1,6 +1,7 @@
 import logging
 import asyncio
 import json
+import re
 from typing import Dict, Any, Optional, AsyncGenerator
 from dotenv import load_dotenv
 import os
@@ -61,18 +62,32 @@ class RAGClient:
             
             # 解析 JSON 響應
             try:
-                # 嘗試提取 JSON（可能包含 markdown 代碼塊或其他文本）
+                # 步驟 1: 處理思考模型的推理標籤（只有結束標籤 </think>）
                 cleaned_response = raw_response.strip()
-                logger.info(f"🔍 [DEBUG] 清理後的響應: {repr(cleaned_response)}")
+                logger.info(f"🔍 [DEBUG] 清理後的響應: {repr(cleaned_response[:200])}...")
                 
-                # 移除可能的 markdown 代碼塊標記
+                # 檢查是否有 </think> 標籤（思考模型的結束標籤，大小寫不敏感）
+                # 使用正則表達式進行大小寫不敏感的匹配
+                pattern = re.compile(r'</think>', re.IGNORECASE)
+                if pattern.search(cleaned_response):
+                    # 提取 </think> 後面的所有內容（大小寫不敏感）
+                    parts = pattern.split(cleaned_response, 1)
+                    if len(parts) > 1:
+                        cleaned_response = parts[1].strip()
+                        logger.info(f"🔍 [DEBUG] 提取 </think> 後的內容: {repr(cleaned_response[:200])}...")
+                
+                # 步驟 2: 移除可能的 markdown 代碼塊標記
                 if cleaned_response.startswith("```"):
                     lines = cleaned_response.split("\n")
                     cleaned_response = "\n".join(lines[1:-1]) if len(lines) > 2 else cleaned_response
-                    logger.info(f"🔍 [DEBUG] 移除 markdown 代碼塊後: {repr(cleaned_response)}")
+                    logger.info(f"🔍 [DEBUG] 移除 markdown 代碼塊後: {repr(cleaned_response[:200])}...")
                 elif "```json" in cleaned_response:
                     cleaned_response = cleaned_response.split("```json")[1].split("```")[0].strip()
-                    logger.info(f"🔍 [DEBUG] 提取 JSON 代碼塊後: {repr(cleaned_response)}")
+                    logger.info(f"🔍 [DEBUG] 提取 JSON 代碼塊後: {repr(cleaned_response[:200])}...")
+                
+                # 步驟 3: 最終清理（移除前後空白）
+                cleaned_response = cleaned_response.strip()
+                logger.info(f"🔍 [DEBUG] 最終清理後的響應: {repr(cleaned_response)}")
                 
                 result = json.loads(cleaned_response)
                 logger.info(f"🔍 [DEBUG] 解析後的 JSON 結果: {result}")
