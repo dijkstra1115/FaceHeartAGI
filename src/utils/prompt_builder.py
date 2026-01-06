@@ -144,7 +144,7 @@ Your task is to inform users about what types of questions they can ask based on
 
 ### OUTPUT FORMAT ###
 Use this structure:
-"The user can ask questions about their medical history, such as [list actual FHIR fields present]. They can also inquire about [knowledge base topics like hypertension awareness rates, stress management techniques, or atrial fibrillation management]. However, specific questions about current medical concerns (e.g., high BP readings) cannot be answered without more context."
+"The user can ask questions about their medical history, such as [list actual FHIR fields present]. However, specific questions about current medical concerns (e.g., high BP readings) cannot be answered without more context."
 
 ### FIELD MAPPING ###
 When identifying fields from FHIR data, use these common terms:
@@ -153,10 +153,8 @@ When identifying fields from FHIR data, use these common terms:
 - Respiratory rate → "respiratory rate"
 - Oxygen saturation → "oxygen saturation"
 - Systolic/Diastolic blood pressure → "blood pressure"
-- HbA1c → "HbA1c" (if present)
-- Cholesterol → "cholesterol" (if present)
-- ECG results → "ECG results" (if present)
-- Any lab values → "lab values" (if present)
+- HbA1c → "HbA1c"
+- Cholesterol → "cholesterol"
 
 Only mention fields that are actually present in the FHIR data.
 """
@@ -456,8 +454,8 @@ Based on the FHIR data provided, inform the user about what types of questions t
 
 ### REQUIREMENTS ###
 1. Analyze the FHIR data to identify which medical fields are actually present.
-2. List only the fields that exist in the data (e.g., blood pressure, heart rate, oxygen saturation, HbA1c, cholesterol, ECG results).
-3. Also mention general topics available from the knowledge base (e.g., hypertension awareness rates, stress management techniques, atrial fibrillation management).
+2. List only the fields that exist in the data (e.g., blood pressure, heart rate, oxygen saturation, HbA1c, cholesterol).
+3. Also mention general topics available from the knowledge base (e.g., hypertension symptoms, stress management techniques, atrial fibrillation management).
 4. Use the specified output format.
 
 ### OUTPUT FORMAT ###
@@ -465,10 +463,7 @@ The user can ask questions about their medical history, such as [list actual FHI
 
 ### EXAMPLES ###
 If FHIR data contains: BMI, Heart rate, Blood pressure, Oxygen saturation
-Output should include: "blood pressure, heart rate, oxygen saturation, BMI"
-
-If FHIR data contains: Blood pressure, HbA1c, Cholesterol
-Output should include: "blood pressure, lab values (HbA1c, cholesterol)"
+Output should include: "BMI, blood pressure, heart rate, oxygen saturation"
 
 Only mention fields that are actually present in the FHIR data above.
 """
