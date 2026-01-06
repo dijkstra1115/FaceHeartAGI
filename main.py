@@ -528,6 +528,6 @@ if __name__ == "__main__":
         "main:app",
         host=os.getenv("API_HOST", "0.0.0.0"),
         port=int(os.getenv("FACEHEART_API_PORT", 8500)),
-        reload=True,
+        reload=False,
         log_level=os.getenv("LOG_LEVEL", "info")
     ) 
