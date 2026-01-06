@@ -170,13 +170,15 @@ POST /analyze-stream
 **請求參數:**
 ```json
 {
-  "session_id": "string",      // 會話ID，用於記錄對話歷史
-  "knowledge_base": {},        // 可選，知識庫內容
+  "device_id": "string",       // 設備ID，用於記錄對話歷史
   "user_question": "string",   // 用戶問題
-  "fhir_data": {},            // FHIR 醫療資料
-  "retrieval_type": "vector" // "vector" 或 "llm"
+  "fhir_data": "string",      // FHIR 醫療資料（JSON 字符串）
+  "retrieval_type": "vector", // "vector" 或 "llm"
+  "generate_audio": false     // 可選，是否生成語音
 }
 ```
+
+**注意**: 知識庫現由服務器端統一管理，不再支持用戶自定義知識庫。
 
 ### 清除會話記錄
 ```
@@ -225,39 +227,92 @@ data: {"type": "medical_analysis", "message": "medical_analysis 完成", "total_
 
 ## 🔧 檢索類型
 
-- 向量檢索 (Vector Search)：使用 FAISS 向量資料庫，語義相似度匹配，支援中文醫療文本
-- LLM 檢索 (Traditional Search)：基於關鍵字匹配，適合結構化資料查詢
+- **向量檢索 (Vector Search)**: 使用 FAISS 向量資料庫，語義相似度匹配，支援中文醫療文本
+  - 支持持久化緩存，啟動快速
+  - 首次啟動約 30-60 秒（構建索引）
+  - 後續啟動約 2-5 秒（從緩存加載）
+- **LLM 檢索 (Traditional Search)**: 基於 LLM 理解和匹配，適合複雜查詢
+
+## 💾 向量數據庫管理
+
+### 緩存機制
+- **自動保存**: 首次構建索引後自動保存到 `vector_cache/medical_knowledge/`
+- **自動加載**: 服務器啟動時優先從緩存加載，大幅提升啟動速度
+- **智能檢測**: 如果緩存不存在或損壞，自動從源文件重新構建
+
+### 更新知識庫
+```bash
+# 1. 修改 knowledge/ 目錄中的 JSON 文件
+# 2. 刪除緩存
+rm -rf vector_cache/medical_knowledge/
+# 3. 重啟服務器，系統會自動重新構建索引
+python main.py
+```
+
+### 性能優化
+- **啟動時間**: 從緩存加載比重新構建快 10-30 倍
+- **內存使用**: 單例模式，所有用戶共享一個實例
+- **GPU 優化**: 避免重複計算嵌入向量，降低 GPU 內存峰值
 
 ## 📁 專案結構
 
 ```
 FaceHeartAGI/
 ├── main.py                      # 主要 API 服務
-├── llm_client.py                # LLM 客戶端（異步串流）
-├── rag_client.py                # RAG 客戶端（支援雙重檢索）
-├── conversation_manager.py       # 對話管理與摘要生成
-├── prompt_builder.py             # 提示詞建構器
-├── vector_store.py               # 向量資料庫管理
-├── test_multi_turn_memory.py     # 多輪記憶測試腳本
-├── requirements.txt              # 依賴套件
-├── env.example                   # 環境變數範例
-├── README.md                     # 專案說明
-├── fhir/                         # FHIR 測試資料
-├── knowledge/                    # 醫療知識庫資料
-└── legacy/                       # 舊版範例與測試腳本
+├── src/
+│   ├── llm_client.py            # LLM 客戶端（異步串流）
+│   ├── rag_client.py            # RAG 客戶端（支援雙重檢索）
+│   ├── conversation_manager.py   # 對話管理與摘要生成
+│   ├── retrieval_strategies.py  # 檢索策略（向量/LLM）
+│   ├── vector_store.py          # 向量資料庫管理（支持持久化）
+│   └── utils/
+│       ├── prompt_builder.py    # 提示詞建構器
+│       ├── data_parser.py       # 資料解析器
+│       └── db.py                # 數據庫模型
+├── tests/                       # 測試腳本
+├── requirements.txt             # 依賴套件
+├── env.example                  # 環境變數範例
+├── README.md                    # 專案說明
+├── VECTOR_STORE_IMPROVEMENTS.md # 向量存儲改進說明
+├── fhir/                        # FHIR 測試資料
+├── knowledge/                   # 醫療知識庫資料（服務器統一管理）
+├── vector_cache/                # 向量數據庫緩存（自動生成）
+├── audio_cache/                 # 語音文件緩存（自動生成）
+└── legacy/                      # 舊版範例與測試腳本
 ```
 
-## 📄 JSON 檔案結構
+## 📄 檔案結構說明
 
-### 知識庫檔案
+### 知識庫檔案 (`knowledge/`)
 
-- **`default_knowledge_base.json`**: 預設醫療知識庫，包含高血壓和糖尿病的基本指南
+知識庫由服務器端統一管理，放置於 `knowledge/` 目錄：
+- **`default_knowledge_base.json`**: 預設醫療知識庫
+- **`diabetes_data.json`**: 糖尿病相關知識
+- **`hypertension_data.json`**: 高血壓相關知識
+- **`heart_failure_data.json`**: 心臟衰竭相關知識
+- **`afib_data.json`**: 心房顫動相關知識
+
+**更新知識庫**: 修改 `knowledge/` 目錄中的文件後，刪除 `vector_cache/` 並重啟服務器即可重新構建索引。
 
 ### 示例資料檔案
 
 - **`fhir/fhir_1.json` ~ `fhir/fhir_6.json`**: 多組 FHIR 醫療資料範例
 
+### 緩存目錄（自動生成）
+
+- **`vector_cache/medical_knowledge/`**: 向量數據庫緩存，包含 FAISS 索引和文檔數據
+- **`audio_cache/`**: TTS 生成的語音文件緩存
+
 ## 🔄 版本變更
+
+### v3.1.0 (最新)
+- ✅ **向量數據庫持久化**: 索引自動保存到磁盤，啟動速度提升 10-30 倍
+- ✅ **統一知識庫管理**: 移除用戶自定義知識庫，由服務器端統一管理
+- ✅ **單例模式優化**: 所有用戶共享一個向量存儲實例，避免重複加載
+- ✅ **GPU 內存優化**: 減少重複計算嵌入向量，降低 GPU 內存峰值
+- ✅ **自動緩存機制**: 首次啟動後自動保存索引，後續啟動快速加載
+- ✅ **API 簡化**: 移除 `knowledge_base` 參數，簡化接口
+- ❌ **移除用戶知識庫**: 不再支持用戶自定義知識庫追加
 
 ### v3.0.0
 - ✅ 僅保留異步串流功能
@@ -284,6 +339,7 @@ FaceHeartAGI/
 - ❌ 性能比較工具
 - ❌ 範例使用腳本（僅 legacy/ 下保留參考）
 - ❌ 啟動腳本（直接使用 main.py）
+- ❌ 用戶自定義知識庫功能 (v3.1.0)
 
 ## 🤝 貢獻
 

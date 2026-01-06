@@ -113,25 +113,24 @@ class RAGClient:
             # 發生錯誤時默認返回醫療問題，確保系統繼續運行
             return "medical_question"
     
-    async def retrieve_relevant_context(self, retrieval_strategy: RetrievalStrategy, user_question: str, database_content: Dict[str, Any]) -> str:
+    async def retrieve_relevant_context(self, retrieval_strategy: RetrievalStrategy, user_question: str) -> str:
         """
         從資料庫中檢索相關內容
         
         Args:
             retrieval_strategy: The retrieval strategy to use.
             user_question: 用戶問題
-            database_content: 資料庫內容
             
         Returns:
             檢索到的相關內容
         """
         if asyncio.iscoroutinefunction(retrieval_strategy.retrieve):
-            return await retrieval_strategy.retrieve(user_question, database_content)
+            return await retrieval_strategy.retrieve(user_question)
         else:
-            return retrieval_strategy.retrieve(user_question, database_content)
+            return retrieval_strategy.retrieve(user_question)
     
     async def enhance_response_with_rag_stream(self, user_question: str, fhir_data: str, 
-                                             database_content: Dict[str, Any], retrieval_type: str, conversation_history: str = "",
+                                             retrieval_type: str, conversation_history: str = "",
                                              require_retrieval: bool = False, enable_conversation_history: bool = True) -> AsyncGenerator[str, None]:
         """
         使用 RAG 增強回應（streaming 模式）
@@ -145,7 +144,6 @@ class RAGClient:
         Args:
             user_question: 用戶問題
             fhir_data: FHIR 資料
-            database_content: 資料庫內容
             retrieval_type: The retrieval type to use.
             conversation_history: 對話歷史（可選）
             require_retrieval: 是否必須檢索到資料（若為 True 且未檢索到資料則回報錯誤）
@@ -153,6 +151,9 @@ class RAGClient:
             
         Yields:
             增強回應的文字片段
+            
+        Note:
+            知識庫由服務器端統一管理，不再支持用戶自定義知識庫
         """
         try:
             # =============================
@@ -180,8 +181,8 @@ class RAGClient:
             else:
                 retrieval_strategy = VectorRetrievalStrategy()
 
-            # 檢索相關內容
-            retrieved_context = await self.retrieve_relevant_context(retrieval_strategy, user_question, database_content)
+            # 檢索相關內容（從服務器統一管理的知識庫）
+            retrieved_context = await self.retrieve_relevant_context(retrieval_strategy, user_question)
             
             if not retrieved_context or retrieved_context.strip() == "No relevant content retrieved.":
                 # 如果設定必須檢索，則回報錯誤

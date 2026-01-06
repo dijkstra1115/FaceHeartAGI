@@ -40,19 +40,23 @@ class VectorRetrievalStrategy(RetrievalStrategy):
         # 使用單例向量存儲
         self.vector_store = get_vector_store()
     
-    def retrieve(self, user_question: str, database_content: Dict[str, Any]) -> str:
-        """使用向量檢索"""
+    def retrieve(self, user_question: str, database_content: Dict[str, Any] = None) -> str:
+        """
+        使用向量檢索
+        
+        Args:
+            user_question: 用戶問題
+            database_content: 已棄用，保留參數以保持接口兼容性
+            
+        Returns:
+            檢索到的相關內容
+        """
         try:
-            # 1. 確保靜態知識庫已加載（只加載一次）
-            logger.info("檢查靜態知識庫加載狀態...")
-            self.vector_store.add_medical_documents(None)  # None 表示加載靜態知識庫
+            # 確保知識庫已加載（只加載一次）
+            logger.info("檢查醫療知識庫加載狀態...")
+            self.vector_store.load_knowledge_base()
             
-            # 2. 如果提供了用戶自定義知識庫，追加到索引中
-            if database_content:
-                logger.info("檢測到用戶提供的知識庫內容，追加到向量索引...")
-                self.vector_store.add_medical_documents(database_content)
-            
-            # 3. 使用向量檢索
+            # 使用向量檢索
             results = self.vector_store.search_medical_context(
                 user_question, 
                 top_k=int(os.getenv("VECTOR_SEARCH_TOP_K", 5))
@@ -91,17 +95,29 @@ class LLMRetrievalStrategy(RetrievalStrategy):
             llm_client: LLM 客戶端實例（通過依賴注入傳入，避免重複創建）
         """
         self.llm_client = llm_client
+        self.vector_store = get_vector_store()
 
-    async def retrieve(self, user_question: str, database_content: Dict[str, Any]) -> str:
-        """使用 LLM 檢索方法（非 streaming）"""
+    async def retrieve(self, user_question: str, database_content: Dict[str, Any] = None) -> str:
+        """
+        使用 LLM 檢索方法（非 streaming）
+        
+        Args:
+            user_question: 用戶問題
+            database_content: 已棄用，保留參數以保持接口兼容性
+            
+        Returns:
+            檢索到的相關內容
+        """
         try:
-            documents = extract_medical_documents(database_content)
-
-            contents = []
-            for doc in documents:
-                content = doc.get('content', '')
-                if content.strip():
-                    contents.append(content)
+            # 確保知識庫已加載
+            self.vector_store.load_knowledge_base()
+            
+            # 獲取所有文檔內容用於 LLM 檢索
+            contents = self.vector_store.documents
+            
+            if not contents:
+                logger.warning("知識庫為空，無法進行 LLM 檢索")
+                return ""
 
             # 建構檢索提示詞
             retrieval_prompt = PromptBuilder.build_retrieval_prompt(user_question, contents)
@@ -125,4 +141,4 @@ class LLMRetrievalStrategy(RetrievalStrategy):
                 
         except Exception as e:
             logger.error(f"LLM 檢索過程中發生錯誤: {str(e)}")
-            return "" "" 
+            return "" 

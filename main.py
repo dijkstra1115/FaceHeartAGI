@@ -103,6 +103,19 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("FaceHeartAGI API 正在啟動...")
     
+    # 初始化向量存儲（嘗試從緩存加載或從源文件構建）
+    try:
+        from src.retrieval_strategies import get_vector_store
+        vector_store = get_vector_store()
+        logger.info("向量存儲實例已初始化")
+        
+        # 嘗試加載知識庫（會自動從緩存加載或重新構建）
+        vector_store.load_knowledge_base()
+        logger.info("醫療知識庫已準備就緒")
+    except Exception as e:
+        logger.error(f"初始化向量存儲時發生錯誤: {e}")
+        logger.warning("服務將繼續運行，但向量檢索可能無法正常工作")
+    
     # # 設置信號處理器（僅在非 Windows 系統或非 reload 模式下）
     # if os.name != 'nt' and not os.getenv("UVICORN_RELOAD"):
     #     loop = asyncio.get_event_loop()
@@ -147,20 +160,8 @@ REQUIRE_RETRIEVAL = os.getenv("REQUIRE_RETRIEVAL", "false").lower() == "true"
 logger.info(f"對話歷史功能: {'已啟用' if ENABLE_CONVERSATION_HISTORY else '已停用'}")
 logger.info(f"必須檢索模式: {'已啟用' if REQUIRE_RETRIEVAL else '已停用'}")
 
-def load_default_knowledge_base():
-    """載入預設知識庫"""
-    try:
-        with open('./knowledge/default_knowledge_base.json', 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except FileNotFoundError:
-        logger.warning("預設知識庫檔案不存在，使用空知識庫")
-        return {}
-    except json.JSONDecodeError as e:
-        logger.error(f"預設知識庫檔案格式錯誤: {e}")
-        return {}
-
-# 載入預設知識庫
-DEFAULT_KNOWLEDGE_BASE = load_default_knowledge_base()
+# 注意：知識庫現在由服務器端統一管理，不再支持用戶自定義知識庫
+# 知識庫將在服務器啟動時自動從 knowledge/ 目錄加載或從緩存加載
 
 # TTS 服務類
 class TTSService:
@@ -240,7 +241,6 @@ tts_service = TTSService()
 class MedicalAnalysisRequest(BaseModel):
     """醫療分析請求模型"""
     device_id: str
-    knowledge_base: Optional[Dict[str, Any]] = None  # 知識庫內容（若無提供則使用預設知識庫模板）
     user_question: str  # 用戶問題
     fhir_data: Optional[str]  # 個人 FHIR 資料
     retrieval_type: Optional[str] = "vector"  # LLM 或向量檢索 ("llm" 或 "vector")
@@ -334,9 +334,6 @@ async def analyze_stream(request: MedicalAnalysisRequest):
             logger.info(f"收到醫療分析請求，會話ID: {request.device_id}, 問題: {request.user_question}")
             logger.info(f"檢索類型: {request.retrieval_type}")
             logger.info(f"生成語音: {request.generate_audio}")
-            
-            # 使用預設知識庫模板（如果沒有提供）
-            knowledge_base = request.knowledge_base if request.knowledge_base else DEFAULT_KNOWLEDGE_BASE
 
             fhir = parser_fhir(json.loads(request.fhir_data)) if request.fhir_data else ""
 
@@ -348,12 +345,11 @@ async def analyze_stream(request: MedicalAnalysisRequest):
             else:
                 logger.info("歷史對話功能已停用")
                         
-            # 直接使用 RAG 串流增強生成回應
+            # 直接使用 RAG 串流增強生成回應（知識庫由服務器統一管理）
             async for chunk in format_streaming_response(
                 rag_client.enhance_response_with_rag_stream(
                     request.user_question,
                     fhir,
-                    knowledge_base,
                     request.retrieval_type,
                     conversation_history,
                     require_retrieval=REQUIRE_RETRIEVAL,
